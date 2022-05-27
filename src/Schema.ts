@@ -1,4 +1,4 @@
-import { Refinement } from 'hkt-ts/Refinement'
+import { AnyAnnotation } from './Annotation/Annotation'
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export abstract class Schema<
@@ -9,7 +9,7 @@ export abstract class Schema<
   ConstructorError,
   Encoded,
   Api,
-  Annotations,
+  Annotations extends ReadonlyArray<AnyAnnotation>,
 > {
   static type: string
   abstract readonly type: string
@@ -48,7 +48,7 @@ export function hasContinuation<
   ConstructorError,
   Encoded,
   Api,
-  Annotations,
+  Annotations extends ReadonlyArray<any>,
 >(
   schema: Schema<
     DecoderInput,
@@ -193,17 +193,3 @@ export type AnnotationsOf<T> = [T] extends [
 ]
   ? R
   : never
-
-// eslint-disable-next-line @typescript-eslint/ban-types
-export class SchemaIdentity<A> extends Schema<unknown, never, A, A, never, A, {}, {}> {
-  static type = 'Identity'
-  readonly type = SchemaIdentity.type
-
-  constructor(readonly refinement: Refinement<unknown, A>) {
-    super()
-  }
-
-  get api() {
-    return {}
-  }
-}

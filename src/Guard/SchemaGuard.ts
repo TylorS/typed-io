@@ -1,8 +1,10 @@
-import { Decoder } from './Decoder'
+import { Refinement } from 'hkt-ts/Refinement'
+
+import { Guard } from './Guard'
 
 import { Schema } from '@/Schema'
 
-export class SchemaDecoder<
+export class SchemaGuard<
   DecodeInput,
   DecodeError,
   Decoded,
@@ -11,11 +13,18 @@ export class SchemaDecoder<
   Encoded,
   Api,
   Annotations extends ReadonlyArray<any>,
-  I,
-  E,
-> extends Schema<I, E, Decoded, ConstructorInput, ConstructorError, Encoded, Api, Annotations> {
-  static type = 'Decoder'
-  readonly type = SchemaDecoder.type
+> extends Schema<
+  DecodeInput,
+  DecodeError,
+  Decoded,
+  ConstructorInput,
+  ConstructorError,
+  Encoded,
+  Api,
+  Annotations
+> {
+  static type = 'Guard'
+  readonly type = SchemaGuard.type
 
   constructor(
     readonly schema: Schema<
@@ -28,7 +37,7 @@ export class SchemaDecoder<
       Api,
       Annotations
     >,
-    readonly decode: Decoder<I, E, Decoded>['decode'],
+    readonly construct: Refinement<unknown, Decoded>,
   ) {
     super()
   }
@@ -38,8 +47,8 @@ export class SchemaDecoder<
   }
 }
 
-export const decoder =
-  <I, E, O>(decode: Decoder<I, E, O>['decode']) =>
+export const guard =
+  <O>(construct: Guard<O>['is']) =>
   <
     DecodeInput,
     DecodeError,
@@ -59,5 +68,14 @@ export const decoder =
       Api,
       Annotations
     >,
-  ): Schema<I, E, O, ConstructorInput, ConstructorError, Encoded, Api, Annotations> =>
-    new SchemaDecoder(schema, decode)
+  ): Schema<
+    DecodeInput,
+    DecodeError,
+    O,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    Annotations
+  > =>
+    new SchemaGuard(schema, construct)

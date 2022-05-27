@@ -10,7 +10,7 @@ export class SchemaConstructor<
   ConstructorError,
   Encoded,
   Api,
-  Annotations,
+  Annotations extends ReadonlyArray<any>,
   I,
   E,
 > extends Schema<DecodeInput, DecodeError, Decoded, I, E, Encoded, Api, Annotations> {
@@ -40,7 +40,15 @@ export class SchemaConstructor<
 
 export const constructor =
   <I, E, O>(construct: Constructor<I, E, O>['construct']) =>
-  <DecodeInput, DecodeError, ConstructorInput, ConstructorError, Encoded, Api, Annotations>(
+  <
+    DecodeInput,
+    DecodeError,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    Annotations extends ReadonlyArray<any>,
+  >(
     schema: Schema<
       DecodeInput,
       DecodeError,

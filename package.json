@@ -1,6 +1,6 @@
 {
-  "name": "@typed/schema",
-  "version": "1.0.0",
+  "name": "@typed/io",
+  "version": "0.0.0",
   "description": "Schemas for modeling all of your data structures",
   "main": "index.js",
   "scripts": {

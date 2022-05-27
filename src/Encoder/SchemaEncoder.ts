@@ -1,8 +1,8 @@
-import { Decoder } from './Decoder'
+import { Encoder } from './Encoder'
 
 import { Schema } from '@/Schema'
 
-export class SchemaDecoder<
+export class SchemaEncoder<
   DecodeInput,
   DecodeError,
   Decoded,
@@ -11,11 +11,19 @@ export class SchemaDecoder<
   Encoded,
   Api,
   Annotations extends ReadonlyArray<any>,
-  I,
-  E,
-> extends Schema<I, E, Decoded, ConstructorInput, ConstructorError, Encoded, Api, Annotations> {
-  static type = 'Decoder'
-  readonly type = SchemaDecoder.type
+  Encoded2,
+> extends Schema<
+  DecodeInput,
+  DecodeError,
+  Decoded,
+  ConstructorInput,
+  ConstructorError,
+  Encoded2,
+  Api,
+  Annotations
+> {
+  static type = 'Encoder'
+  readonly type = SchemaEncoder.type
 
   constructor(
     readonly schema: Schema<
@@ -28,7 +36,7 @@ export class SchemaDecoder<
       Api,
       Annotations
     >,
-    readonly decode: Decoder<I, E, Decoded>['decode'],
+    readonly encode: Encoder<Decoded, Encoded2>['encode'],
   ) {
     super()
   }
@@ -38,8 +46,8 @@ export class SchemaDecoder<
   }
 }
 
-export const decoder =
-  <I, E, O>(decode: Decoder<I, E, O>['decode']) =>
+export const encoder =
+  <I, O>(encode: Encoder<I, O>['encode']) =>
   <
     DecodeInput,
     DecodeError,
@@ -52,12 +60,12 @@ export const decoder =
     schema: Schema<
       DecodeInput,
       DecodeError,
-      O,
+      I,
       ConstructorInput,
       ConstructorError,
       Encoded,
       Api,
       Annotations
     >,
-  ): Schema<I, E, O, ConstructorInput, ConstructorError, Encoded, Api, Annotations> =>
-    new SchemaDecoder(schema, decode)
+  ): Schema<DecodeInput, DecodeError, I, ConstructorInput, ConstructorError, O, Api, Annotations> =>
+    new SchemaEncoder(schema, encode)
