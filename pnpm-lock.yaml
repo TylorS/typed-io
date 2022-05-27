@@ -19,7 +19,7 @@ specifiers:
   eslint-plugin-prettier: ^4.0.0
   fast-check: ^3.0.0
   fast-glob: ^3.2.11
-  hkt-ts: ^2.0.3
+  hkt-ts: ^2.0.4
   husky: ^8.0.1
   lint-staged: ^12.4.2
   mocha: ^10.0.0
@@ -33,7 +33,7 @@ specifiers:
   typescript: ^4.7.2
 
 dependencies:
-  hkt-ts: 2.0.3_tslib@2.4.0
+  hkt-ts: 2.0.4_tslib@2.4.0
 
 devDependencies:
   '@types/mocha': 9.1.1
@@ -792,7 +792,7 @@ packages:
       is-shared-array-buffer: 1.0.2
       is-string: 1.0.7
       is-weakref: 1.0.2
-      object-inspect: 1.12.1
+      object-inspect: 1.12.2
       object-keys: 1.1.1
       object.assign: 4.1.2
       regexp.prototype.flags: 1.4.3
@@ -1527,8 +1527,8 @@ packages:
     hasBin: true
     dev: true
 
-  /hkt-ts/2.0.3_tslib@2.4.0:
-    resolution: {integrity: sha512-4fz4zuJD0f3aavE7rmKzuPDF0tXSKPgiYZlJObGis36SyzZeAELCI56PrC7FKgjXpzIoTPgktPmgSLwdTGis4w==}
+  /hkt-ts/2.0.4_tslib@2.4.0:
+    resolution: {integrity: sha512-K5UqniODkwPGSfxrruoAY9dbQ7GYqFgMDUP9MXolL6wH3ZkafiChBM67MYKMZfPGi5/R/Bj+vIFLGCdNAY/c8Q==}
     peerDependencies:
       tslib: ^2.4.0
     dependencies:
@@ -1803,7 +1803,7 @@ packages:
       listr2: 4.0.5
       micromatch: 4.0.5
       normalize-path: 3.0.0
-      object-inspect: 1.12.1
+      object-inspect: 1.12.2
       pidtree: 0.5.0
       string-argv: 0.3.1
       supports-color: 9.2.2
@@ -1992,8 +1992,8 @@ packages:
       path-key: 3.1.1
     dev: true
 
-  /object-inspect/1.12.1:
-    resolution: {integrity: sha512-Y/jF6vnvEtOPGiKD1+q+X0CiUYRQtEHp89MLLUJ7TUivtH8Ugn2+3A7Rynqk7BRsAoqeOQWnFnjpDrKSxDgIGA==}
+  /object-inspect/1.12.2:
+    resolution: {integrity: sha512-z+cPxW0QGUp0mcqcsgQyLVRDoXFQbXOwBaqyF7VIgI4TWNQsDHrBpUQslRmIfAoYWdYzs6UlKJtB2XJpTaNSpQ==}
     dev: true
 
   /object-keys/1.1.1:
@@ -2300,7 +2300,7 @@ packages:
     dependencies:
       call-bind: 1.0.2
       get-intrinsic: 1.1.1
-      object-inspect: 1.12.1
+      object-inspect: 1.12.2
     dev: true
 
   /signal-exit/3.0.7:
@@ -2719,7 +2719,7 @@ packages:
       require-directory: 2.1.1
       string-width: 4.2.3
       y18n: 5.0.8
-      yargs-parser: 20.2.9
+      yargs-parser: 20.2.4
     dev: true
 
   /yargs/17.5.1:
