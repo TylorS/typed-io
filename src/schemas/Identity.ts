@@ -14,3 +14,7 @@ export class SchemaIdentity<A> extends Schema<unknown, never, A, A, never, A, un
     return {}
   }
 }
+
+export const identity = <A>(
+  refinement: Refinement<unknown, A>,
+): Schema<unknown, never, A, A, never, A, unknown, []> => new SchemaIdentity(refinement)
