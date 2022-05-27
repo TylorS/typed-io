@@ -29,6 +29,7 @@
   "author": "Tylor Steinberger (tlsteinberger167@gmail.com)",
   "license": "MIT",
   "dependencies": {
+    "@types/json-schema": "^7.0.11",
     "hkt-ts": "^2.0.4"
   },
   "peerDependencies": {
