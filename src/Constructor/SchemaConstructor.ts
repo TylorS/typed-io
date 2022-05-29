@@ -1,21 +1,25 @@
 import { Constructor } from './Constructor'
 
-import { Schema } from '@/Schema'
+import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
 
 export class SchemaConstructor<
-  DecodeInput,
-  DecodeError,
-  Decoded,
-  ConstructorInput,
-  ConstructorError,
-  Encoded,
-  Api,
-  Annotations extends ReadonlyArray<any>,
-  I,
-  E,
-> extends Schema<DecodeInput, DecodeError, Decoded, I, E, Encoded, Api, Annotations> {
+    DecodeInput,
+    DecodeError,
+    Decoded,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    Annotations extends ReadonlyArray<any>,
+    I,
+    E,
+  >
+  extends Schema<DecodeInput, DecodeError, Decoded, I, E, Encoded, Api, Annotations>
+  implements HasContinuation
+{
   static type = 'Constructor'
-  readonly type = SchemaConstructor.type
+  readonly type = SchemaConstructor.type;
+  readonly [ContinuationSymbol] = this.schema
 
   constructor(
     readonly schema: Schema<

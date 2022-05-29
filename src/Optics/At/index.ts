@@ -1,4 +1,4 @@
-import { Lens } from '@/Optics/Lens'
+import { Lens } from '@/Optics/Lens/index'
 
 export interface At<Ix, I, O> {
   readonly at: (index: Ix) => Lens<I, O>

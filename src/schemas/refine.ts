@@ -1,19 +1,22 @@
+import { Refinement } from 'hkt-ts/Refinement'
+
 import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
 
-export class SchemaDebug<
+export class SchemaRefine<
     DecodeInput,
     DecodeError,
-    Decoded,
     ConstructorInput,
     ConstructorError,
     Encoded,
     Api,
     Annotations extends ReadonlyArray<any>,
+    A,
+    B extends A,
   >
   extends Schema<
     DecodeInput,
     DecodeError,
-    Decoded,
+    B,
     ConstructorInput,
     ConstructorError,
     Encoded,
@@ -22,22 +25,22 @@ export class SchemaDebug<
   >
   implements HasContinuation
 {
-  static type = 'Debug'
-  readonly type = SchemaDebug.type;
+  static type = 'Refine'
+  readonly type = SchemaRefine.type;
   readonly [ContinuationSymbol] = this.schema
 
   constructor(
     readonly schema: Schema<
       DecodeInput,
       DecodeError,
-      Decoded,
+      A,
       ConstructorInput,
       ConstructorError,
       Encoded,
       Api,
       Annotations
     >,
-    readonly debug: (decoded: Decoded) => string,
+    readonly refinement: Refinement<A, B>,
   ) {
     super()
   }
@@ -47,7 +50,7 @@ export class SchemaDebug<
   }
 }
 
-export function debug<Decoded>(debug: (decoded: Decoded) => string) {
+export function refine<A, B extends A>(refinement: Refinement<A, B>) {
   return <
     DecodeInput,
     DecodeError,
@@ -60,7 +63,7 @@ export function debug<Decoded>(debug: (decoded: Decoded) => string) {
     schema: Schema<
       DecodeInput,
       DecodeError,
-      Decoded,
+      A,
       ConstructorInput,
       ConstructorError,
       Encoded,
@@ -70,11 +73,11 @@ export function debug<Decoded>(debug: (decoded: Decoded) => string) {
   ): Schema<
     DecodeInput,
     DecodeError,
-    Decoded,
+    B,
     ConstructorInput,
     ConstructorError,
     Encoded,
     Api,
     Annotations
-  > => new SchemaDebug(schema, debug)
+  > => new SchemaRefine(schema, refinement)
 }

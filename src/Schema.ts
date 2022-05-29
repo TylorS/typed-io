@@ -192,4 +192,4 @@ export type AnnotationsOf<T> = [T] extends [
   >,
 ]
   ? R
-  : never
+  : []

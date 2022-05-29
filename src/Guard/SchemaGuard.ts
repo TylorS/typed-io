@@ -2,29 +2,33 @@ import { Refinement } from 'hkt-ts/Refinement'
 
 import { Guard } from './Guard'
 
-import { Schema } from '@/Schema'
+import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
 
 export class SchemaGuard<
-  DecodeInput,
-  DecodeError,
-  Decoded,
-  ConstructorInput,
-  ConstructorError,
-  Encoded,
-  Api,
-  Annotations extends ReadonlyArray<any>,
-> extends Schema<
-  DecodeInput,
-  DecodeError,
-  Decoded,
-  ConstructorInput,
-  ConstructorError,
-  Encoded,
-  Api,
-  Annotations
-> {
+    DecodeInput,
+    DecodeError,
+    Decoded,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    Annotations extends ReadonlyArray<any>,
+  >
+  extends Schema<
+    DecodeInput,
+    DecodeError,
+    Decoded,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    Annotations
+  >
+  implements HasContinuation
+{
   static type = 'Guard'
-  readonly type = SchemaGuard.type
+  readonly type = SchemaGuard.type;
+  readonly [ContinuationSymbol] = this.schema
 
   constructor(
     readonly schema: Schema<

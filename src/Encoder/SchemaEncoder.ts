@@ -1,29 +1,33 @@
 import { Encoder } from './Encoder'
 
-import { Schema } from '@/Schema'
+import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
 
 export class SchemaEncoder<
-  DecodeInput,
-  DecodeError,
-  Decoded,
-  ConstructorInput,
-  ConstructorError,
-  Encoded,
-  Api,
-  Annotations extends ReadonlyArray<any>,
-  Encoded2,
-> extends Schema<
-  DecodeInput,
-  DecodeError,
-  Decoded,
-  ConstructorInput,
-  ConstructorError,
-  Encoded2,
-  Api,
-  Annotations
-> {
+    DecodeInput,
+    DecodeError,
+    Decoded,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    Annotations extends ReadonlyArray<any>,
+    Encoded2,
+  >
+  extends Schema<
+    DecodeInput,
+    DecodeError,
+    Decoded,
+    ConstructorInput,
+    ConstructorError,
+    Encoded2,
+    Api,
+    Annotations
+  >
+  implements HasContinuation
+{
   static type = 'Encoder'
-  readonly type = SchemaEncoder.type
+  readonly type = SchemaEncoder.type;
+  readonly [ContinuationSymbol] = this.schema
 
   constructor(
     readonly schema: Schema<
@@ -46,7 +50,7 @@ export class SchemaEncoder<
   }
 }
 
-export const encoder =
+export const encode =
   <I, O>(encode: Encoder<I, O>['encode']) =>
   <
     DecodeInput,

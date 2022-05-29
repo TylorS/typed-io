@@ -1,6 +1,8 @@
+import { Arbitrary } from 'hkt-ts/Law/Arbitrary'
+
 import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
 
-export class SchemaDebug<
+export class SchemaArbitrary<
     DecodeInput,
     DecodeError,
     Decoded,
@@ -22,8 +24,8 @@ export class SchemaDebug<
   >
   implements HasContinuation
 {
-  static type = 'Debug'
-  readonly type = SchemaDebug.type;
+  static type = 'Arbitrary'
+  readonly type = SchemaArbitrary.type;
   readonly [ContinuationSymbol] = this.schema
 
   constructor(
@@ -37,7 +39,7 @@ export class SchemaDebug<
       Api,
       Annotations
     >,
-    readonly debug: (decoded: Decoded) => string,
+    readonly arbitary: Arbitrary<Decoded>,
   ) {
     super()
   }
@@ -47,7 +49,7 @@ export class SchemaDebug<
   }
 }
 
-export function debug<Decoded>(debug: (decoded: Decoded) => string) {
+export function arbitrary<Decoded>(arbitrary: Arbitrary<Decoded>) {
   return <
     DecodeInput,
     DecodeError,
@@ -76,5 +78,5 @@ export function debug<Decoded>(debug: (decoded: Decoded) => string) {
     Encoded,
     Api,
     Annotations
-  > => new SchemaDebug(schema, debug)
+  > => new SchemaArbitrary(schema, arbitrary)
 }

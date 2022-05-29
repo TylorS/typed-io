@@ -1,29 +1,33 @@
 import { Annotation, AnyAnnotation } from './Annotation'
 
-import { Schema } from '@/Schema'
+import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
 
 export class SchemaAnnotation<
-  DecodeInput,
-  DecodeError,
-  Decoded,
-  ConstructorInput,
-  ConstructorError,
-  Encoded,
-  Api,
-  Annotations extends ReadonlyArray<AnyAnnotation>,
-  Appended extends ReadonlyArray<AnyAnnotation>,
-> extends Schema<
-  DecodeInput,
-  DecodeError,
-  Decoded,
-  ConstructorInput,
-  ConstructorError,
-  Encoded,
-  Api,
-  readonly [...Annotations, ...Appended]
-> {
+    DecodeInput,
+    DecodeError,
+    Decoded,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    Annotations extends ReadonlyArray<AnyAnnotation>,
+    Appended extends ReadonlyArray<AnyAnnotation>,
+  >
+  extends Schema<
+    DecodeInput,
+    DecodeError,
+    Decoded,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    readonly [...Annotations, ...Appended]
+  >
+  implements HasContinuation
+{
   static type = 'Annotation'
-  readonly type = SchemaAnnotation.type
+  readonly type = SchemaAnnotation.type;
+  readonly [ContinuationSymbol] = this.schema
 
   constructor(
     readonly schema: Schema<
@@ -73,5 +77,5 @@ export function addAnnotations<Appended extends ReadonlyArray<AnyAnnotation>>(
 }
 
 export function addAnnotation<Id, A>(annotation: Annotation<Id, A>) {
-  return addAnnotations([annotation])
+  return addAnnotations([annotation] as const)
 }
