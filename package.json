@@ -30,7 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/json-schema": "^7.0.11",
-    "hkt-ts": "^2.0.4"
+    "hkt-ts": "^2.0.5"
   },
   "peerDependencies": {
     "tslib": "^2.4.0"

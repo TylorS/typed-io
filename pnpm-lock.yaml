@@ -20,7 +20,7 @@ specifiers:
   eslint-plugin-prettier: ^4.0.0
   fast-check: ^3.0.0
   fast-glob: ^3.2.11
-  hkt-ts: ^2.0.4
+  hkt-ts: ^2.0.5
   husky: ^8.0.1
   lint-staged: ^12.4.2
   mocha: ^10.0.0
@@ -35,7 +35,7 @@ specifiers:
 
 dependencies:
   '@types/json-schema': 7.0.11
-  hkt-ts: 2.0.4_tslib@2.4.0
+  hkt-ts: 2.0.5_tslib@2.4.0
 
 devDependencies:
   '@types/mocha': 9.1.1
@@ -1568,8 +1568,8 @@ packages:
     hasBin: true
     dev: true
 
-  /hkt-ts/2.0.4_tslib@2.4.0:
-    resolution: {integrity: sha512-K5UqniODkwPGSfxrruoAY9dbQ7GYqFgMDUP9MXolL6wH3ZkafiChBM67MYKMZfPGi5/R/Bj+vIFLGCdNAY/c8Q==}
+  /hkt-ts/2.0.5_tslib@2.4.0:
+    resolution: {integrity: sha512-MTAm8dKQbwazO9q6H44KTHsbWetdlHGklhEZ0idvPF741t5F+fXced5V0k98/gQbkUwtIbsTonFrnOSWSYYA3A==}
     peerDependencies:
       tslib: ^2.4.0
     dependencies:
