@@ -139,3 +139,13 @@ export interface Traversal<A, B> {
     ) => (a: A) => Kind<T, A>
   }
 }
+
+export function Traversal<A, B>(
+  modify: <T extends HKT>(
+    IBC: IdentityBoth<T> & Covariant<T>,
+  ) => (f: (b: B) => Kind<T, B>) => (a: A) => Kind<T, A>,
+): Traversal<A, B> {
+  return {
+    modify,
+  }
+}
