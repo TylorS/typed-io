@@ -8,7 +8,7 @@ import {
   Schema,
 } from '@/Schema'
 
-export type UnionApi<SS extends ReadonlyArray<AnySchema>> = { readonly members: SS }
+export type UnionApi<SS extends ReadonlyArray<AnySchema>> = { readonly members: Readonly<SS> }
 
 export class SchemaUnion<SS extends ReadonlyArray<AnySchema>> extends Schema<
   DecoderInputOf<SS[number]>,
