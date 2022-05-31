@@ -5,6 +5,7 @@ import { Just, Maybe, Nothing } from 'hkt-ts/Maybe'
 import { ReadonlyRecord } from 'hkt-ts/Record'
 import { Both, These } from 'hkt-ts/These'
 import { unsafeCoerce } from 'hkt-ts/function'
+import { Float, Integer } from 'hkt-ts/number'
 import { JSONSchema7 } from 'json-schema'
 
 export type JsonSchema<A> = Branded.Branded<A, JSONSchema7>
@@ -33,10 +34,65 @@ export const defs =
   <A>(schema: JsonSchema<A>) =>
     JsonSchema<A>({ ...schema, definitions: { ...schema?.definitions, ...defs } })
 
-export const string = JsonSchema<string>({ type: 'string' })
-export const number = JsonSchema<number>({ type: 'number' })
+export const unknown_ = JsonSchema<unknown>({})
+export { unknown_ as unknown }
+
+export const string = (constraints?: import('fast-check').StringSharedConstraints) => {
+  const def: JSONSchema7 = {
+    type: 'string',
+  }
+
+  if (constraints?.minLength !== undefined) {
+    def.minLength = constraints.minLength
+  }
+  if (constraints?.maxLength !== undefined) {
+    def.maxLength = constraints.maxLength
+  }
+
+  return JsonSchema<string>(def)
+}
+
+export const float = (constraints?: import('fast-check').FloatConstraints) => {
+  const def: JSONSchema7 = {
+    type: 'number',
+  }
+
+  if (constraints?.min !== undefined) {
+    def.minimum = constraints.min
+  }
+  if (constraints?.max !== undefined) {
+    def.maximum = constraints.max
+  }
+
+  return JsonSchema<Float>(def)
+}
+
+export const integer = (constraints?: import('fast-check').IntegerConstraints) => {
+  const def: JSONSchema7 = {
+    type: 'integer',
+  }
+
+  if (constraints?.min !== undefined) {
+    def.minimum = Math.round(constraints.min)
+  }
+  if (constraints?.max !== undefined) {
+    def.maximum = Math.round(constraints.max)
+  }
+
+  return JsonSchema<Integer>(def)
+}
+
+export const number = (
+  constraints?: import('fast-check').IntegerConstraints & import('fast-check').FloatConstraints,
+) => union(float(constraints), integer(constraints)) as JsonSchema<number>
+
 export const boolean = JsonSchema<boolean>({ type: 'boolean' })
+export const true_ = JsonSchema<boolean>({ type: 'boolean', enum: [true] })
+export const false_ = JsonSchema<boolean>({ type: 'boolean', enum: [false] })
 export const null_ = JsonSchema<null>({ type: 'null' })
+
+export { true_ as true, false_ as false, null_ as null }
+
 export const date = JsonSchema<Date>({ type: 'string', format: 'date-time' })
 export const unknownRecord: JsonSchema<ReadonlyRecord<string, unknown>> = JsonSchema({
   type: 'object',
