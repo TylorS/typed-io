@@ -1,7 +1,6 @@
 import { AnyAnnotation } from './Annotation'
-import { SchemaAnnotation } from './SchemaAnnotation'
 
-import { AnySchema } from '@/Schema'
+import { AnySchema, SchemaAnnotation } from '@/Schema'
 
 export function getAnnotations_<S extends AnySchema>(schema: S) {
   if (schema.type === SchemaAnnotation.type) {

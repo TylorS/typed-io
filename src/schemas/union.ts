@@ -8,6 +8,8 @@ import {
   Schema,
 } from '@/Schema'
 
+export type UnionApi<SS extends ReadonlyArray<AnySchema>> = { readonly members: SS }
+
 export class SchemaUnion<SS extends ReadonlyArray<AnySchema>> extends Schema<
   DecoderInputOf<SS[number]>,
   DecoderErrorOf<SS[number]>,
@@ -15,12 +17,12 @@ export class SchemaUnion<SS extends ReadonlyArray<AnySchema>> extends Schema<
   EncodedOf<SS[number]>,
   never,
   EncodedOf<SS[number]>,
-  { readonly members: SS },
+  UnionApi<SS>,
   UnionAnnotations<SS>
 > {
   static type = 'Union'
   readonly type = SchemaUnion.type
-  readonly api: { readonly members: SS }
+  readonly api: UnionApi<SS>
 
   constructor(readonly members: SS) {
     super()
@@ -40,7 +42,7 @@ export function union<SS extends ReadonlyArray<AnySchema>>(
   EncodedOf<SS[number]>,
   never,
   EncodedOf<SS[number]>,
-  { readonly members: SS },
+  UnionApi<SS>,
   UnionAnnotations<SS>
 > {
   return new SchemaUnion(schemas)

@@ -5,11 +5,14 @@ import { Decoder } from './Decoder'
 
 export function fromRefinment<A, B extends A>(
   refinement: Refinement<A, B>,
-): RefinementDecoder<A, B> {
+): Decoder<A, RefinementError<A, B>, B> {
   return new RefinementDecoder<A, B>(refinement)
 }
 
 export class RefinementDecoder<A, B extends A> implements Decoder<A, RefinementError<A, B>, B> {
+  static tag = 'Refinement'
+  readonly tag = RefinementDecoder.tag
+
   constructor(readonly refinement: Refinement<A, B>) {}
 
   readonly decode = (a: A) =>

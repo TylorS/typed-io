@@ -1,4 +1,4 @@
-import { Arbitrary } from 'hkt-ts/Law/Arbitrary'
+import type { Arbitrary } from 'hkt-ts/Law/Arbitrary'
 
 import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
 
@@ -39,7 +39,7 @@ export class SchemaArbitrary<
       Api,
       Annotations
     >,
-    readonly arbitary: Arbitrary<Decoded>,
+    readonly arbitary: Arbitrary<Decoded>['arbitrary'],
   ) {
     super()
   }
@@ -49,7 +49,7 @@ export class SchemaArbitrary<
   }
 }
 
-export function arbitrary<Decoded>(arbitrary: Arbitrary<Decoded>) {
+export function arbitrary<Decoded>(arbitrary: Arbitrary<Decoded>['arbitrary']) {
   return <
     DecodeInput,
     DecodeError,

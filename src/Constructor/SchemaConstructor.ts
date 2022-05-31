@@ -42,7 +42,7 @@ export class SchemaConstructor<
   }
 }
 
-export const constructor =
+export const construct =
   <I, E, O>(construct: Constructor<I, E, O>['construct']) =>
   <
     DecodeInput,
