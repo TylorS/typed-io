@@ -2,6 +2,7 @@ import { Refinement } from 'hkt-ts/Refinement'
 
 import { Guard } from './Guard'
 
+import { AnyAnnotation } from '@/Annotation/Annotation'
 import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
 
 export class SchemaGuard<
@@ -12,7 +13,7 @@ export class SchemaGuard<
     ConstructorError,
     Encoded,
     Api,
-    Annotations extends ReadonlyArray<any>,
+    Annotations extends ReadonlyArray<AnyAnnotation>,
   >
   extends Schema<
     DecodeInput,
@@ -41,7 +42,7 @@ export class SchemaGuard<
       Api,
       Annotations
     >,
-    readonly construct: Refinement<unknown, Decoded>,
+    readonly is: Refinement<unknown, Decoded>,
   ) {
     super()
   }
@@ -52,7 +53,7 @@ export class SchemaGuard<
 }
 
 export const guard =
-  <O>(construct: Guard<O>['is']) =>
+  <O>(guard: Guard<O>['is']) =>
   <
     DecodeInput,
     DecodeError,
@@ -82,4 +83,4 @@ export const guard =
     Api,
     Annotations
   > =>
-    new SchemaGuard(schema, construct)
+    new SchemaGuard(schema, guard)

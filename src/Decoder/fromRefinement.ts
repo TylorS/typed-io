@@ -3,6 +3,8 @@ import { Refinement } from 'hkt-ts/Refinement'
 
 import { Decoder } from './Decoder'
 
+import { LeafError } from '@/SchemaError/SchemaError'
+
 export function fromRefinment<A, B extends A>(
   refinement: Refinement<A, B>,
 ): Decoder<A, RefinementError<A, B>, B> {
@@ -16,7 +18,7 @@ export class RefinementDecoder<A, B extends A> implements Decoder<A, RefinementE
   constructor(readonly refinement: Refinement<A, B>) {}
 
   readonly decode = (a: A) =>
-    this.refinement(a) ? Right(a) : Left(new RefinementError(a, this.refinement))
+    this.refinement(a) ? Right(a) : Left(new LeafError(new RefinementError(a, this.refinement)))
 }
 
 export class RefinementError<A, B extends A> {

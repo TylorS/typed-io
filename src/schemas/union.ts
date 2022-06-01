@@ -1,3 +1,6 @@
+import { Cast } from 'ts-toolbelt/out/Any/Cast'
+
+import { AnyAnnotation } from '@/Annotation/Annotation'
 import {
   AnnotationsOf,
   AnySchema,
@@ -52,5 +55,8 @@ export type UnionAnnotations<
   SS extends ReadonlyArray<any>,
   R extends ReadonlyArray<any> = [],
 > = SS extends readonly [infer Head, ...infer Tail]
-  ? UnionAnnotations<Tail, [...R, ...AnnotationsOf<Head>]>
+  ? UnionAnnotations<
+      Tail,
+      [...R, ...Cast<AnnotationsOf<Cast<Head, AnySchema>>, ReadonlyArray<AnyAnnotation>>]
+    >
   : R

@@ -2,19 +2,17 @@ import { Refinement } from 'hkt-ts/Refinement'
 
 import { Schema } from '@/Schema'
 
-export class SchemaIdentity<A> extends Schema<unknown, never, A, A, never, A, unknown, []> {
+// eslint-disable-next-line @typescript-eslint/ban-types
+export class SchemaIdentity<A> extends Schema<unknown, never, A, A, never, A, {}, readonly []> {
   static type = 'Identity'
   readonly type = SchemaIdentity.type
+  readonly api = {}
 
   constructor(readonly refinement: Refinement<unknown, A>) {
     super()
-  }
-
-  get api() {
-    return {}
   }
 }
 
 export const identity = <A>(
   refinement: Refinement<unknown, A>,
-): Schema<unknown, never, A, A, never, A, unknown, []> => new SchemaIdentity(refinement)
+): Schema<unknown, never, A, A, never, A, unknown, readonly []> => new SchemaIdentity(refinement)

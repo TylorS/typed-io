@@ -23,7 +23,7 @@ export abstract class Schema<
     readonly _ConstructorError: () => ConstructorError
     readonly _Encoded: () => Encoded
     readonly _Api: () => Api
-    readonly _Annotations: (a: Annotations) => never
+    readonly _Annotations: Annotations
   }
 
   readonly addAnnotation = <Id, A>(
@@ -38,7 +38,7 @@ export abstract class Schema<
     Encoded,
     Api,
     readonly [...Annotations, Annotation<Id, A>]
-  > => new SchemaAnnotation(this, [Annotation.make(id, value)])
+  > => new SchemaAnnotation(this, [Annotation.make(id, value)] as const)
 
   readonly compose = <
     DecodeError2,
@@ -118,125 +118,33 @@ export function hasContinuation<
   return ContinuationSymbol in schema
 }
 
-export type DecoderInputOf<T> = [T] extends [
-  Schema<
-    infer R,
-    infer __,
-    infer ___,
-    infer ____,
-    infer _____,
-    infer ______,
-    infer _______,
-    infer _________
-  >,
-]
-  ? R
-  : never
+export type DecoderInputOf<T extends AnySchema> =
+  T['__VARIANCE_NOT_AVAILABLE_AT_RUNTIME__']['_DecodeInput'] extends (input: infer I) => never
+    ? I
+    : never
 
-export type DecoderErrorOf<T> = [T] extends [
-  Schema<
-    infer _,
-    infer R,
-    infer ___,
-    infer ____,
-    infer _____,
-    infer ______,
-    infer _______,
-    infer _________
-  >,
-]
-  ? R
-  : never
+export type DecoderErrorOf<T extends AnySchema> =
+  T['__VARIANCE_NOT_AVAILABLE_AT_RUNTIME__']['_DecodeError'] extends () => infer E ? E : never
 
-export type DecodedOf<T> = [T] extends [
-  Schema<
-    infer _,
-    infer __,
-    infer R,
-    infer ____,
-    infer _____,
-    infer ______,
-    infer _______,
-    infer _________
-  >,
-]
-  ? R
-  : never
+export type DecodedOf<T extends AnySchema> =
+  T['__VARIANCE_NOT_AVAILABLE_AT_RUNTIME__']['_Decoded'] extends () => infer D ? D : never
 
-export type ConstructorInputOf<T> = [T] extends [
-  Schema<
-    infer _,
-    infer __,
-    infer ___,
-    infer R,
-    infer _____,
-    infer ______,
-    infer _______,
-    infer _________
-  >,
-]
-  ? R
-  : never
+export type ConstructorInputOf<T extends AnySchema> =
+  T['__VARIANCE_NOT_AVAILABLE_AT_RUNTIME__']['_ConstructorInput'] extends (input: infer I) => never
+    ? I
+    : never
 
-export type ConstructorErrorOf<T> = [T] extends [
-  Schema<
-    infer _,
-    infer __,
-    infer ___,
-    infer ____,
-    infer R,
-    infer ______,
-    infer _______,
-    infer _________
-  >,
-]
-  ? R
-  : never
+export type ConstructorErrorOf<T extends AnySchema> =
+  T['__VARIANCE_NOT_AVAILABLE_AT_RUNTIME__']['_ConstructorError'] extends () => infer E ? E : never
 
-export type EncodedOf<T> = [T] extends [
-  Schema<
-    infer _,
-    infer __,
-    infer ___,
-    infer ____,
-    infer _____,
-    infer R,
-    infer _______,
-    infer _________
-  >,
-]
-  ? R
-  : never
+export type EncodedOf<T extends AnySchema> =
+  T['__VARIANCE_NOT_AVAILABLE_AT_RUNTIME__']['_Encoded'] extends () => infer E ? E : never
 
-export type ApiOf<T> = [T] extends [
-  Schema<
-    infer _,
-    infer __,
-    infer ___,
-    infer ____,
-    infer _____,
-    infer ______,
-    infer R,
-    infer _________
-  >,
-]
-  ? R
-  : never
+export type ApiOf<T extends AnySchema> =
+  T['__VARIANCE_NOT_AVAILABLE_AT_RUNTIME__']['_Api'] extends () => infer E ? E : never
 
-export type AnnotationsOf<T> = [T] extends [
-  Schema<
-    infer _,
-    infer __,
-    infer ___,
-    infer ____,
-    infer _____,
-    infer ______,
-    infer _________,
-    infer R
-  >,
-]
-  ? R
-  : []
+export type AnnotationsOf<T extends AnySchema> =
+  T['__VARIANCE_NOT_AVAILABLE_AT_RUNTIME__']['_Annotations']
 
 export class SchemaAnnotation<
     DecodeInput,

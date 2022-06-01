@@ -2,29 +2,33 @@ import { JsonSchema } from './JsonSchema'
 import * as J from './JsonSchema'
 
 import { AnyAnnotation } from '@/Annotation/Annotation'
-import { Schema } from '@/Schema'
+import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
 
 export class SchemaJsonSchema<
-  DecodeInput,
-  DecodeError,
-  Decoded,
-  ConstructorInput,
-  ConstructorError,
-  Encoded,
-  Api,
-  Annotations extends ReadonlyArray<AnyAnnotation>,
-> extends Schema<
-  DecodeInput,
-  DecodeError,
-  Decoded,
-  ConstructorInput,
-  ConstructorError,
-  Encoded,
-  Api,
-  Annotations
-> {
+    DecodeInput,
+    DecodeError,
+    Decoded,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    Annotations extends ReadonlyArray<AnyAnnotation>,
+  >
+  extends Schema<
+    DecodeInput,
+    DecodeError,
+    Decoded,
+    ConstructorInput,
+    ConstructorError,
+    Encoded,
+    Api,
+    Annotations
+  >
+  implements HasContinuation
+{
   static type = 'JsonSchema'
-  readonly type = SchemaJsonSchema.type
+  readonly type = SchemaJsonSchema.type;
+  readonly [ContinuationSymbol] = this.schema
 
   constructor(
     readonly schema: Schema<

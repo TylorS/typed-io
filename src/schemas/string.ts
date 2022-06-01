@@ -12,7 +12,7 @@ import { Schema } from '@/Schema'
 
 export const string = (
   constraints?: import('fast-check').StringSharedConstraints,
-): Schema<unknown, never, string, string, never, string, unknown, []> =>
+): Schema<unknown, never, string, string, never, string, unknown, readonly []> =>
   pipe(
     identity(S.isString),
     equals(S.Eq.equals),
