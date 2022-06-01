@@ -9,6 +9,7 @@ export type SchemaError<E> =
   | MemberError<SchemaError<E>>
   | MissingIndexes
   | MissingKeys
+  | NamedError<string, SchemaError<E>>
   | NullableError<SchemaError<E>>
   | OptionalError<SchemaError<E>>
   | OptionalIndex<SchemaError<E>>
@@ -95,6 +96,12 @@ export class MissingKeys extends compound('MissingKeys')<string> {}
 export class UnexpectedIndexes extends compound('UnexpectedIndexes')<number> {}
 export class MissingIndexes extends compound('MissingIndexes')<number> {}
 
+export class NamedError<Name extends string, E> extends single('Named')<E> {
+  constructor(readonly name: Name, error: E) {
+    super(error)
+  }
+}
+
 export function makeDecodeErrorAssociative<E>(name: string): Associative<SchemaError<E>> {
   return {
     concat: (f, s) => {
@@ -122,24 +129,25 @@ export function makeDecodeErrorFlatMap<E>(name: string) {
   return makeFlatMap(makeDecodeErrorAssociative<E>(name))
 }
 
-export function matchSchemaError<Error, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O>(patterns: {
+export function matchSchemaError<Error, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P>(patterns: {
   Compound: (error: CompoundError<SchemaError<Error>>) => A
   Lazy: (error: LazyError<SchemaError<Error>>) => B
   Leaf: (error: LeafError<Error>) => C
   Member: (error: MemberError<SchemaError<Error>>) => D
   MissingIndexes: (error: MissingIndexes) => E
   MissingKeys: (error: MissingKeys) => F
-  Nullable: (error: NullableError<SchemaError<Error>>) => G
-  Optional: (error: OptionalError<SchemaError<Error>>) => H
-  OptionalIndex: (error: OptionalIndex<SchemaError<Error>>) => I
-  OptionalKey: (error: OptionalKey<PropertyKey, SchemaError<Error>>) => J
-  RequiredIndex: (error: RequiredIndex<SchemaError<Error>>) => K
-  RequiredKey: (error: RequiredKey<PropertyKey, SchemaError<Error>>) => L
-  Sum: (error: SumError<SchemaError<Error>>) => M
-  UnexpectedIndexes: (error: UnexpectedIndexes) => N
-  UnexpectedKeys: (error: UnexpectedKeys) => O
+  Named: (error: NamedError<string, SchemaError<Error>>) => G
+  Nullable: (error: NullableError<SchemaError<Error>>) => H
+  Optional: (error: OptionalError<SchemaError<Error>>) => I
+  OptionalIndex: (error: OptionalIndex<SchemaError<Error>>) => J
+  OptionalKey: (error: OptionalKey<PropertyKey, SchemaError<Error>>) => K
+  RequiredIndex: (error: RequiredIndex<SchemaError<Error>>) => L
+  RequiredKey: (error: RequiredKey<PropertyKey, SchemaError<Error>>) => M
+  Sum: (error: SumError<SchemaError<Error>>) => N
+  UnexpectedIndexes: (error: UnexpectedIndexes) => O
+  UnexpectedKeys: (error: UnexpectedKeys) => P
 }) {
-  return (error: SchemaError<Error>): B | C | D | E | F | G | H | I | J | K | L | M | N | O =>
+  return (error: SchemaError<Error>): B | C | D | E | F | G | H | I | J | K | L | M | N | O | P =>
     (patterns[error.tag] as any)(error)
 }
 
@@ -154,6 +162,7 @@ export function mapSchemaError<E1, E2>(f: (e1: E1) => E2) {
         Member: (m) => ({ ...m, error: pipe(m.error, mapSchemaError(f)) }),
         MissingIndexes: identity,
         MissingKeys: identity,
+        Named: (n) => ({ ...n, error: pipe(n.error, mapSchemaError(f)) }),
         Nullable: (n) => ({ ...n, error: pipe(n.error, mapSchemaError(f)) }),
         Optional: (o) => ({ ...o, error: pipe(o.error, mapSchemaError(f)) }),
         OptionalIndex: (o) => ({ ...o, error: pipe(o.error, mapSchemaError(f)) }),

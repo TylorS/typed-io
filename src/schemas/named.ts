@@ -10,20 +10,13 @@ import {
   EncodedOf,
   Schema,
 } from '@/Schema'
-import { single } from '@/SchemaError/SchemaError'
-
-export class NamedError<Name extends string, E> extends single('Named')<E> {
-  constructor(readonly name: Name, error: E) {
-    super(error)
-  }
-}
 
 export class SchemaNamed<Name extends string, S extends AnySchema> extends Schema<
   DecoderInputOf<S>,
-  NamedError<Name, DecoderErrorOf<S>>,
+  DecoderErrorOf<S>,
   DecodedOf<S>,
   ConstructorInputOf<S>,
-  NamedError<Name, ConstructorErrorOf<S>>,
+  ConstructorErrorOf<S>,
   EncodedOf<S>,
   ApiOf<S>,
   AnnotationsOf<S>
@@ -46,10 +39,10 @@ export const named =
     schema: S,
   ): Schema<
     DecoderInputOf<S>,
-    NamedError<Name, DecoderErrorOf<S>>,
+    DecoderErrorOf<S>,
     DecodedOf<S>,
     ConstructorInputOf<S>,
-    NamedError<Name, ConstructorErrorOf<S>>,
+    ConstructorErrorOf<S>,
     EncodedOf<S>,
     ApiOf<S>,
     AnnotationsOf<S>
