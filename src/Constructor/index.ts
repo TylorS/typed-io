@@ -1,2 +1,2 @@
 export * from './Constructor'
-export * from './SchemaConstructor'
+export * from './ConstructorSchema'

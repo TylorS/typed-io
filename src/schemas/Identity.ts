@@ -1,22 +1,24 @@
 import { Refinement } from 'hkt-ts/Refinement'
 
+import { Constructor } from '@/Constructor/Constructor'
+import { Decoder } from '@/Decoder/Decoder'
+import { Encoder } from '@/Encoder/Encoder'
+import { JsonSchema } from '@/JsonSchema/JsonSchema'
 import { Schema } from '@/Schema'
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-export class SchemaIdentity<A> extends Schema<
-  unknown,
+export class IdentitySchema<A> extends Schema<
+  Decoder<unknown, never, A>,
+  Constructor<A, never, A>,
+  Encoder<A, A>,
   never,
-  A,
-  A,
-  never,
-  A,
   {
     readonly refinement: Refinement<unknown, A>
   },
   readonly []
 > {
   static type = 'Identity'
-  readonly type = SchemaIdentity.type
+  readonly type = IdentitySchema.type
   readonly api = {
     refinement: this.refinement,
   }
@@ -28,4 +30,13 @@ export class SchemaIdentity<A> extends Schema<
 
 export const identity = <A>(
   refinement: Refinement<unknown, A>,
-): Schema<unknown, never, A, A, never, A, unknown, readonly []> => new SchemaIdentity(refinement)
+): Schema<
+  Decoder<unknown, never, A>,
+  Constructor<A, never, A>,
+  Encoder<A, A>,
+  JsonSchema<unknown>,
+  {
+    readonly refinement: Refinement<unknown, A>
+  },
+  readonly []
+> => new IdentitySchema(refinement)

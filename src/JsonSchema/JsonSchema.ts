@@ -1,161 +1,484 @@
 import * as Branded from 'hkt-ts/Branded'
-import { Either, Left, Right } from 'hkt-ts/Either'
+import { Data } from 'hkt-ts/Data'
+import { Either } from 'hkt-ts/Either'
 import { JsonPrimitive } from 'hkt-ts/Json'
-import { Just, Maybe, Nothing } from 'hkt-ts/Maybe'
+import { Maybe } from 'hkt-ts/Maybe'
+import { NonEmptyArray } from 'hkt-ts/NonEmptyArray'
+import { Progress } from 'hkt-ts/Progress'
 import { ReadonlyRecord } from 'hkt-ts/Record'
-import { Both, These } from 'hkt-ts/These'
-import { unsafeCoerce } from 'hkt-ts/function'
-import { Float, Integer } from 'hkt-ts/number'
-import { JSONSchema7 } from 'json-schema'
+import { RoseTree } from 'hkt-ts/RoseTree'
+import { Tree } from 'hkt-ts/Tree'
+import { flow, unsafeCoerce } from 'hkt-ts/function'
+import { Integer, NonNegativeInteger } from 'hkt-ts/number'
+import * as JS from 'json-schema'
+import { Equals } from 'ts-toolbelt/out/Any/Equals'
+import { ReadonlyDeep } from 'ts-toolbelt/out/Object/Readonly'
 
-export type JsonSchema<A> = Branded.Branded<A, JSONSchema7>
+/* #region JsonSchema Core */
+export type JsonSchema<A> = Branded.Branded<{ readonly Decoded: A }, ReadonlyDeep<JS.JSONSchema7>>
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type ValueOf<T> = T extends Branded.Branded<infer Brand, infer _> ? Brand : unknown
+export type JsonSchemaDefinition<A> = Branded.Branded<
+  { readonly Decoded: A },
+  ReadonlyDeep<JS.JSONSchema7> | boolean
+>
 
-export const JsonSchema = <A>(schema: JSONSchema7): JsonSchema<A> => unsafeCoerce(schema)
+export type DecodedOf<T> = T extends boolean
+  ? T
+  : [T] extends [JsonSchemaDefinition<infer R>]
+  ? R
+  : never
 
-// Utilize a reference to another JsonSchema
-export const ref =
+/**
+ * Construct a JsonSchema that's tagged with the decoded value and optionally an ID.
+ */
+export const JsonSchema = <A>(schema: ReadonlyDeep<JS.JSONSchema7>): JsonSchema<A> =>
+  unsafeCoerce({ $schema: 'json-schema.org/draft-07/schema#', ...schema })
+
+/* #endregion */
+
+/* #region JSON Schema Metadata Types */
+
+/**
+ * All of the shared constraints for all JsonSchema
+ */
+export interface SharedConstraints
+  extends ReadonlyDeep<
+    Pick<
+      JS.JSONSchema7,
+      | '$id'
+      | '$ref'
+      | '$schema'
+      | '$comment'
+      | '$defs'
+      | 'definitions'
+      | 'enum'
+      | 'const'
+      | 'title'
+      | 'description'
+      | 'examples'
+    >
+  > {}
+
+/**
+ * Add an ID to a given JsonSchema
+ */
+export const $id =
+  <Id extends string>(id: Id) =>
+  <A>(jsonSchema: JsonSchema<A>) =>
+    JsonSchema<A>({ ...jsonSchema, $id: id })
+
+/**
+ * Creates a Reference to another JsonSchema's ID
+ */
+export const $ref =
   <A>() =>
   <Ref extends string>(id: Ref) =>
     JsonSchema<A>({ $ref: id })
 
-export const self = <A>() => ref<A>()('#')
+/**
+ * Create a Reference to another Schema
+ */
+export const refFrom = <A>(schema: JsonSchema<A>) => {
+  if (!schema.$id) {
+    throw new Error(
+      `Unable to construct a Ref from Schema without $id: ${JSON.stringify(schema, null, 2)}`,
+    )
+  }
 
-// Give your Schema a ID to be utilized by a ref
-export const id =
+  return $ref<A>()(schema.$id)
+}
+
+/**
+ * Create a Reference to a Schema defined within "$defs"
+ */
+export const defsRef =
+  <A>() =>
   <Ref extends string>(id: Ref) =>
-  <A>(schema: JsonSchema<A>) =>
-    JsonSchema<A>({ ...schema, $id: id })
+    $ref<A>()(`#/$defs/${id}`)
 
-export const defs =
+/**
+ * Create a Reference to a Schema defined within "definitions"
+ */
+export const definitionsRef =
+  <A>() =>
+  <Ref extends string>(id: Ref) =>
+    $ref<A>()(`#/definitions/${id}`)
+
+/**
+ * Create a Reference
+ */
+export const self = <A>() => $ref<A>()('#')
+
+export const $comment =
+  (comment: string) =>
+  <A>(jsonSchema: JsonSchema<A>): JsonSchema<A> =>
+    JsonSchema<A>({ ...jsonSchema, $comment: comment })
+
+export const $defs =
+  <Defs extends ReadonlyRecord<string, JsonSchema<any>>>(defs: Defs) =>
+  <A>(schema: JsonSchema<A>) =>
+    JsonSchema<A>({ ...schema, $defs: { ...schema?.$defs, ...defs } })
+
+export const definitions =
   <Defs extends ReadonlyRecord<string, JsonSchema<any>>>(defs: Defs) =>
   <A>(schema: JsonSchema<A>) =>
     JsonSchema<A>({ ...schema, definitions: { ...schema?.definitions, ...defs } })
+/* #endregion */
 
-export const unknown_ = JsonSchema<unknown>({})
-export { unknown_ as unknown }
+/* #region JSON Schema Primitives */
+export const unknown = JsonSchema<unknown>({
+  type: ['array', 'boolean', 'integer', 'null', 'number', 'object', 'string'],
+})
 
-export const string = (constraints?: import('fast-check').StringSharedConstraints) => {
-  const def: JSONSchema7 = {
-    type: 'string',
-  }
-
-  if (constraints?.minLength !== undefined) {
-    def.minLength = constraints.minLength
-  }
-  if (constraints?.maxLength !== undefined) {
-    def.maxLength = constraints.maxLength
-  }
-
-  return JsonSchema<string>(def)
-}
-
-export const float = (constraints?: import('fast-check').FloatConstraints) => {
-  const def: JSONSchema7 = {
-    type: 'number',
-  }
-
-  if (constraints?.min !== undefined) {
-    def.minimum = constraints.min
-  }
-  if (constraints?.max !== undefined) {
-    def.maximum = constraints.max
-  }
-
-  return JsonSchema<Float>(def)
-}
-
-export const integer = (constraints?: import('fast-check').IntegerConstraints) => {
-  const def: JSONSchema7 = {
-    type: 'integer',
-  }
-
-  if (constraints?.min !== undefined) {
-    def.minimum = Math.round(constraints.min)
-  }
-  if (constraints?.max !== undefined) {
-    def.maximum = Math.round(constraints.max)
-  }
-
-  return JsonSchema<Integer>(def)
-}
-
-export const number = (
-  constraints?: import('fast-check').IntegerConstraints & import('fast-check').FloatConstraints,
-) => union(float(constraints), integer(constraints)) as JsonSchema<number>
-
-export const boolean = JsonSchema<boolean>({ type: 'boolean' })
-export const true_ = JsonSchema<boolean>({ type: 'boolean', enum: [true] })
-export const false_ = JsonSchema<boolean>({ type: 'boolean', enum: [false] })
-export const null_ = JsonSchema<null>({ type: 'null' })
-
-export { true_ as true, false_ as false, null_ as null }
-
-export const date = JsonSchema<Date>({ type: 'string', format: 'date-time' })
-export const unknownRecord: JsonSchema<ReadonlyRecord<string, unknown>> = JsonSchema({
+export const unknownRecord = JsonSchema<ReadonlyRecord<string, unknown>>({
   type: 'object',
 })
-export const unknownArray: JsonSchema<ReadonlyArray<unknown>> = JsonSchema({ type: 'array' })
 
-export const exactly = <A extends JsonPrimitive>(value: A): JsonSchema<A> =>
-  JsonSchema<A>({ enum: [value] })
+export const unknownArray = JsonSchema<ReadonlyArray<unknown>>({
+  type: 'array',
+})
 
-export const union = <U extends ReadonlyArray<JsonSchema<any>>>(
-  ...schemas: U
-): JsonSchema<ValueOf<U[number]>> => JsonSchema<ValueOf<U[number]>>({ oneOf: [...schemas] })
+// String
+export interface StringConstraints<
+  T extends string = never,
+  T2 extends ReadonlyArray<string> = never,
+> extends SharedConstraints {
+  readonly minLength?: NonNegativeInteger
+  readonly maxLength?: NonNegativeInteger
+  readonly patthern?: RegExp
+  readonly default?: string
+  readonly const?: T
+  readonly enum?: T2
+  readonly contentEncoding?: string
+  readonly contentMediaType?: string
+}
 
-export const nullable = <A>(schema: JsonSchema<A>): JsonSchema<A | null> => union(schema, null_)
-
-export const oneOf = <A extends ReadonlyArray<JsonPrimitive>>(...values: A) =>
-  JsonSchema<A>({ enum: [...values] })
-
-export const array = <A>(schema: JsonSchema<A>): JsonSchema<ReadonlyArray<A>> =>
-  JsonSchema<ReadonlyArray<A>>({ type: 'array', items: schema })
-
-export const record = <A>(codomain: JsonSchema<A>): JsonSchema<ReadonlyRecord<string, A>> =>
-  JsonSchema<ReadonlyRecord<string, A>>({ ...unknownRecord, additionalProperties: codomain })
-
-export const partial = <A extends ReadonlyRecord<string, any>>(properties: {
-  readonly [K in keyof A]: JsonSchema<A[K]>
-}): JsonSchema<Partial<A>> =>
-  JsonSchema<Partial<A>>({
-    ...unknownRecord,
-    properties,
-  })
-
-export const requiredKeys = <A extends ReadonlyRecord<string, any>>(properties: {
-  readonly [K in keyof A]: JsonSchema<A[K]>
-}) => JsonSchema<{ readonly [K in keyof A]: unknown }>({ required: Object.keys(properties) })
-
-export const additionalProperties = <A>(
-  schema: JsonSchema<A>,
-): JsonSchema<A & ReadonlyRecord<string, unknown>> =>
+export const string = <T extends string = never, T2 extends ReadonlyArray<string> = never>(
+  constraints?: StringConstraints<T, T2>,
+): JsonSchema<
+  {
+    0: T
+    1: {
+      0: T2[number]
+      1: string
+    }[Equals<never, T2>]
+  }[Equals<never, T>]
+> =>
   JsonSchema({
-    ...schema,
-    additionalProperties: true,
+    type: 'string',
+    ...constraints,
   })
 
-export const struct = <A extends ReadonlyRecord<string, any>>(properties: {
-  readonly [K in keyof A]: JsonSchema<A[K]>
-}): JsonSchema<A> => JsonSchema<A>({ ...partial(properties), ...requiredKeys(properties) })
+// Integer
+export interface IntegerConstraints extends SharedConstraints {
+  readonly minimum?: Integer
+  readonly maximum?: Integer
+  readonly multipleOf?: Integer
+  readonly exclusiveMaximum?: Integer
+  readonly exclusiveMinimum?: Integer
+  readonly default?: Integer
+}
 
-export const maybe = <A>(schema: JsonSchema<A>): JsonSchema<Maybe<A>> =>
-  union(
-    struct<Nothing>({ tag: exactly('Nothing') }),
-    struct<Just<A>>({ tag: exactly('Just'), value: schema }),
-  )
+export const integer = (constraints?: IntegerConstraints): JsonSchema<Integer> =>
+  JsonSchema<Integer>({
+    type: 'integer',
+    ...constraints,
+  })
 
-export const either = <E, A>(E: JsonSchema<E>, A: JsonSchema<A>): JsonSchema<Either<E, A>> =>
-  union(
-    struct<Left<E>>({ tag: exactly('Left'), left: E }),
-    struct<Right<A>>({ tag: exactly('Right'), right: A }),
-  )
+// Number
+export interface NumberConstraints extends SharedConstraints {
+  readonly minimum?: number
+  readonly maximum?: number
+  readonly multipleOf?: number
+  readonly exclusiveMaximum?: number
+  readonly exclusiveMinimum?: number
+  readonly default?: number
+}
 
-export const these = <E, A>(E: JsonSchema<E>, A: JsonSchema<A>): JsonSchema<These<E, A>> =>
-  union(
-    struct<Left<E>>({ tag: exactly('Left'), left: E }),
-    struct<Right<A>>({ tag: exactly('Right'), right: A }),
-    struct<Both<E, A>>({ tag: exactly('Both'), left: E, right: A }),
-  )
+export const number = (constraints?: NumberConstraints): JsonSchema<number> =>
+  JsonSchema<number>({
+    type: 'number',
+    ...constraints,
+  })
+
+// Boolean
+export const boolean = (constraints?: SharedConstraints): JsonSchema<boolean> =>
+  JsonSchema({ type: 'boolean', ...constraints })
+
+const true_ = (constraints?: Omit<SharedConstraints, 'const' | 'enum'>) =>
+  boolean({
+    ...constraints,
+    const: true,
+  })
+
+const false_ = (constraints?: Omit<SharedConstraints, 'const' | 'enum'>) =>
+  boolean({
+    ...constraints,
+    const: false,
+  })
+
+export { true_ as true, false_ as false }
+
+// Null
+const null_ = JsonSchema({ type: 'null' })
+
+export { null_ as null }
+
+export const nullable = <A>(schema: JsonSchema<A>): JsonSchema<A | null> =>
+  JsonSchema({
+    anyOf: [null_, schema],
+  })
+
+// Array
+export interface ArrayConstraints<A> extends SharedConstraints {
+  readonly minContains?: number
+  readonly maxContains?: number
+  readonly uniqueItems?: boolean
+  readonly default?: ReadonlyArray<A>
+}
+
+export const array = <A>(items: JsonSchema<A>, constraints?: ArrayConstraints<A>) =>
+  JsonSchema<ReadonlyArray<A>>({
+    type: 'array',
+    contains: items,
+    ...(constraints as JS.JSONSchema7),
+  })
+
+// Tuple
+export interface TupleConstraints<A extends ReadonlyArray<JsonSchemaDefinition<any>>>
+  extends SharedConstraints {
+  readonly default?: { readonly [K in keyof A]: DecodedOf<A[K]> }
+}
+
+export const tuple = <A extends ReadonlyArray<JsonSchemaDefinition<any>>>(
+  items: readonly [...A],
+  constraints: TupleConstraints<A> = {},
+) =>
+  JsonSchema<{ readonly [K in keyof A]: DecodedOf<A[K]> }>({
+    type: 'array',
+    items,
+    minItems: items.length,
+    maxItems: items.length,
+    ...(constraints as JS.JSONSchema7),
+  })
+
+// Record
+
+export interface RecordConstraints<K extends string, A> extends SharedConstraints {
+  readonly maxProperties?: number
+  readonly minProperties?: number
+  readonly patternProperties?: ReadonlyRecord<string, JsonSchemaDefinition<string>>
+  readonly required?: readonly K[]
+  readonly default?: ReadonlyRecord<K, A>
+}
+
+export const record = <A, K extends string = string>(
+  codomain: JsonSchemaDefinition<A>,
+  constraints: RecordConstraints<K, A> = {},
+) =>
+  JsonSchema<ReadonlyRecord<K, A>>({
+    type: 'object',
+    ...(constraints as JS.JSONSchema7),
+    additionalProperties: codomain,
+  })
+
+// Struct
+
+export class Property<A, IsOptional extends boolean> {
+  static tag = 'Property' as const
+  readonly tag = Property.tag
+
+  constructor(readonly schema: JsonSchema<A>, readonly isOptional: IsOptional) {}
+
+  readonly optional = () => new Property(this.schema, true)
+  readonly required = () => new Property(this.schema, false)
+}
+
+export const prop = <A>(schema: JsonSchema<A>) => new Property(schema, false)
+
+export interface StructConstraints<K extends string, B> extends SharedConstraints {
+  readonly patternProperties?: ReadonlyRecord<string, JsonSchemaDefinition<string>>
+  readonly propertyNames?: JsonSchemaDefinition<K> | undefined
+  readonly additionalProperties?: JsonSchemaDefinition<B> | undefined
+  readonly dependencies?: ReadonlyRecord<K, NonEmptyArray<K>>
+}
+
+export const struct = <
+  A extends ReadonlyRecord<string, Property<any, boolean>>,
+  K extends keyof A & string,
+  B = never,
+>(
+  structure: A,
+  constraints?: StructConstraints<K, B>,
+): JsonSchema<BuildStruct<A> & StructAdditionalProperties<B>> => {
+  const entries = Object.entries(structure)
+  const required = entries.flatMap(([k, v]) => (v.isOptional ? [] : [k]))
+  const properties = Object.fromEntries(entries.map(([k, v]) => [k, v.schema] as const))
+
+  return JsonSchema<BuildStruct<A> & StructAdditionalProperties<B>>({
+    type: 'object',
+    ...(constraints as JS.JSONSchema7),
+    properties,
+    required,
+  })
+}
+
+// Wrapped in a conditional to unwrap the type in your editor, making a separate type to compact it just leads to double-wrapping
+export type BuildStruct<A extends ReadonlyRecord<string, Property<any, boolean>>> = [
+  {
+    readonly [K in keyof A as A[K]['isOptional'] extends true ? K : never]?: DecodedOf<
+      A[K]['schema']
+    >
+  } & {
+    readonly [K in keyof A as A[K]['isOptional'] extends false ? K : never]: DecodedOf<
+      A[K]['schema']
+    >
+  },
+] extends [infer R]
+  ? { readonly [K in keyof R]: R[K] }
+  : never
+
+export type StructAdditionalProperties<A> = {
+  0: ReadonlyRecord<string, A>
+  1: unknown
+}[Equals<never, A>]
+/* #endregion */
+
+/* #region JSONS Schema Constructors */
+/**
+ * Construct a JSON Schema from a JSON Primitive literal
+ */
+export const literal = <A extends JsonPrimitive>(value: A) =>
+  JsonSchema<A>({
+    type: typeof value as JsonSchema<A>['type'],
+    const: value,
+  })
+
+/**
+ * Construct a JSON Schema from a tuple of JSON Primitive literals
+ */
+export const oneOf = <A extends ReadonlyArray<JsonPrimitive>>(
+  ...values: A
+): JsonSchema<A[number]> => union(...values.map(literal))
+
+/* #endregion /*
+
+/* #region Combinators */
+export const union = <A extends ReadonlyArray<JsonSchemaDefinition<any>>>(
+  ...schemas: A
+): JsonSchema<DecodedOf<A[number]>> =>
+  JsonSchema({
+    anyOf: [...schemas],
+  })
+
+export const intersection = <A extends ReadonlyArray<JsonSchemaDefinition<any>>>(
+  ...schemas: A
+): JsonSchema<ToIntersection<A>> =>
+  JsonSchema({
+    allOf: [...schemas],
+  })
+
+type ToIntersection<A extends ReadonlyArray<any>, R = unknown> = A extends readonly [
+  infer Head,
+  ...infer Tail,
+]
+  ? ToIntersection<Tail, R & DecodedOf<Head>>
+  : { readonly [K in keyof R]: R[K] }
+
+export const sum =
+  <T extends Readonly<Record<PropertyKey, any>>>(constraints?: SharedConstraints) =>
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  <Tag extends keyof T>(_tag: Tag) =>
+  <A extends SumJsonSchemas<T, Tag>>(schemas: A): JsonSchema<T> =>
+    JsonSchema<T>({
+      ...constraints,
+      oneOf: Object.values(schemas),
+    })
+
+export type SumJsonSchemas<T, Tag extends keyof T> = {
+  readonly [K in T[Tag] & string]: JsonSchema<FindSumSchema<T, Tag, K>>
+}
+
+export type FindSumSchema<T, Tag extends keyof T, K extends T[Tag]> = T extends {
+  readonly [_ in Tag]: K
+}
+  ? T
+  : never
+/* #endregion */
+
+/* #region  HKT-TS Integrations */
+export const branded =
+  <B extends Branded.Branded<any, any>>() =>
+  (schema: JsonSchema<Branded.ValueOf<B>>): JsonSchema<B> =>
+    unsafeCoerce(schema)
+
+export const maybe = <A>(value: JsonSchema<A>): JsonSchema<Maybe<A>> =>
+  sum<Maybe<A>>()('tag')({
+    Nothing: struct({
+      tag: prop(string({ const: 'Nothing' })),
+    }),
+    Just: struct({
+      tag: prop(string({ const: 'Just' })),
+      value: prop(value),
+    }),
+  })
+
+export const either = <E, A>(left: JsonSchema<E>, right: JsonSchema<A>): JsonSchema<Either<E, A>> =>
+  sum<Either<E, A>>()('tag')({
+    Left: struct({
+      tag: prop(string({ const: 'Left' })),
+      left: prop(left),
+    }),
+    Right: struct({
+      tag: prop(string({ const: 'Right' })),
+      right: prop(right),
+    }),
+  })
+
+export const progress = (
+  loaded: JsonSchema<number> = number(),
+  total: JsonSchema<number> = number(),
+): JsonSchema<Progress> =>
+  struct({
+    loaded: prop(loaded),
+    total: prop(maybe(total)),
+  })
+
+export const data = <A>(value: JsonSchema<A>): JsonSchema<Data<A>> =>
+  sum<Data<A>>()('tag')({
+    NoData: struct({
+      tag: prop(string({ const: 'NoData' })),
+    }),
+    Pending: struct({
+      tag: prop(string({ const: 'Pending' })),
+      progress: prop(maybe(progress())),
+    }),
+    Refreshing: struct({
+      tag: prop(string({ const: 'Refreshing' })),
+      value: prop(value),
+      progress: prop(maybe(progress())),
+    }),
+    Replete: struct({
+      tag: prop(string({ const: 'Replete' })),
+      value: prop(value),
+    }),
+  })
+
+export const dataEither = flow(either, data)
+
+export const tree = <P, C>(parent: JsonSchema<P>, child: JsonSchema<C>): JsonSchema<Tree<P, C>> =>
+  sum<Tree<P, C>>()('tag')({
+    Parent: struct({
+      tag: prop(string({ const: 'Parent' })),
+      value: prop(parent),
+      forest: prop(array(self<Tree<P, C>>())),
+    }),
+    Leaf: struct({
+      tag: prop(string({ const: 'Leaf' })),
+      value: prop(child),
+    }),
+  })
+
+export const roseTree = <A>(value: JsonSchema<A>): JsonSchema<RoseTree<A>> => tree(value, value)
+
+/* #endregion */

@@ -1,1 +1,1 @@
-export * from './SchemaEq'
+export * from './EqSchema'

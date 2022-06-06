@@ -9,3 +9,7 @@ export function Guard<A>(is: Guard<A>['is']): Guard<A> {
     is,
   }
 }
+
+export const array = <A>(guard: Guard<A>): Guard<readonly A[]> => ({
+  is: (u): u is readonly A[] => Array.isArray(u) && u.every(guard.is),
+})

@@ -1,1 +1,1 @@
-export * from './SchemaDebug'
+export * from './DebugSchema'

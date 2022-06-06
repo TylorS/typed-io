@@ -1,2 +1,4 @@
 export * from './Decoder'
-export * from './SchemaDecoder'
+export * from './DecoderSchema'
+export * from './fromGuard'
+export * from './fromRefinement'

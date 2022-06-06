@@ -1,2 +1,2 @@
 export * from './Encoder'
-export * from './SchemaEncoder'
+export * from './EncoderSchema'

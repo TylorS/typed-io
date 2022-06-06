@@ -11,9 +11,7 @@ export function getAnnotations_<S extends AnySchema>(schema: S) {
         any,
         any,
         any,
-        any,
-        any,
-        any,
+        ReadonlyArray<AnyAnnotation>,
         ReadonlyArray<AnyAnnotation>
       >
     ).annotations

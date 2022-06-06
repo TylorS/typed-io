@@ -1,1 +1,1 @@
-export * from './SchemaArbitrary'
+export * from './ArbitrarySchema'

@@ -1,2 +1,2 @@
 export * from './JsonSchema'
-export * from './SchemaJsonSchema'
+export * from './JsonSchemaSchema'

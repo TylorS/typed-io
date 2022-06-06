@@ -9,7 +9,7 @@ export type SchemaError<E> =
   | MemberError<SchemaError<E>>
   | MissingIndexes
   | MissingKeys
-  | NamedError<string, SchemaError<E>>
+  | NamedError<string, SchemaError<E>> // TODO: Should Named be separated to allow for easier lookups of Names?
   | NullableError<SchemaError<E>>
   | OptionalError<SchemaError<E>>
   | OptionalIndex<SchemaError<E>>
