@@ -36,7 +36,9 @@ export class ArbitrarySchema<
 }
 
 export const arbitrary =
-  <O>(arbitrary: (fc: typeof import('fast-check')) => import('fast-check').Arbitrary<O>) =>
+  <O1, O2 extends O1>(
+    arbitrary: (fc: typeof import('fast-check')) => import('fast-check').Arbitrary<O2>,
+  ) =>
   <
     DI,
     DE,
@@ -46,6 +48,6 @@ export const arbitrary =
     Api,
     Annotations extends ReadonlyArray<AnyAnnotation>,
   >(
-    schema: Schema<Decoder.Decoder<DI, DE, O>, C, E, J, Api, Annotations>,
-  ) =>
+    schema: Schema<Decoder.Decoder<DI, DE, O1>, C, E, J, Api, Annotations>,
+  ): Schema<Decoder.Decoder<DI, DE, O1>, C, E, J, Api, Annotations> =>
     new ArbitrarySchema(schema, arbitrary)

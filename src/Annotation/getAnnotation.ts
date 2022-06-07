@@ -21,10 +21,10 @@ export function getAnnotation<Id extends AnnotationId<any, any>>(id: Id) {
   }
 }
 
-export type FindAnnotation<
-  Id extends AnnotationId<any, any>,
-  S extends ReadonlyArray<any>,
-> = S extends readonly [infer Head, ...infer Tail]
+export type FindAnnotation<Id extends AnnotationId<any, any>, S> = S extends readonly [
+  infer Head,
+  ...infer Tail,
+]
   ? // eslint-disable-next-line @typescript-eslint/no-unused-vars
     Head extends Annotation<infer _, infer R>
     ? R

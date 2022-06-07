@@ -2,9 +2,9 @@
 import { Branded } from 'hkt-ts/Branded'
 
 export class Annotation<Id, A> {
-  constructor(readonly id: AnnotationId<Id, A>, readonly value: A) {}
+  constructor(readonly id: Id, readonly value: A) {}
 
-  static make = <Id, A>(id: AnnotationId<Id, A>, value: A) => new Annotation(id, value)
+  static make = <Id, A>(id: Id, value: A) => new Annotation(id, value)
 }
 
 export type AnyAnnotation = Annotation<any, any>

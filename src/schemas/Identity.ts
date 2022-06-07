@@ -3,7 +3,6 @@ import { Refinement } from 'hkt-ts/Refinement'
 import { Constructor } from '@/Constructor/Constructor'
 import { Decoder } from '@/Decoder/Decoder'
 import { Encoder } from '@/Encoder/Encoder'
-import { JsonSchema } from '@/JsonSchema/JsonSchema'
 import { Schema } from '@/Schema'
 
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -34,7 +33,7 @@ export const identity = <A>(
   Decoder<unknown, never, A>,
   Constructor<A, never, A>,
   Encoder<A, A>,
-  JsonSchema<unknown>,
+  never,
   {
     readonly refinement: Refinement<unknown, A>
   },

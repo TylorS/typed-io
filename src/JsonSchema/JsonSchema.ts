@@ -145,7 +145,7 @@ export interface StringConstraints<
 > extends SharedConstraints {
   readonly minLength?: NonNegativeInteger
   readonly maxLength?: NonNegativeInteger
-  readonly patthern?: RegExp
+  readonly pattern?: RegExp
   readonly default?: string
   readonly const?: T
   readonly enum?: T2
@@ -153,20 +153,25 @@ export interface StringConstraints<
   readonly contentMediaType?: string
 }
 
-export const string = <T extends string = never, T2 extends ReadonlyArray<string> = never>(
-  constraints?: StringConstraints<T, T2>,
-): JsonSchema<
-  {
-    0: T
-    1: {
-      0: T2[number]
-      1: string
-    }[Equals<never, T2>]
-  }[Equals<never, T>]
-> =>
+export type GetTypeFromStringConstraints<
+  T extends string = never,
+  T2 extends ReadonlyArray<string> = never,
+> = {
+  0: T
+  1: {
+    0: T2[number]
+    1: string
+  }[Equals<never, T2>]
+}[Equals<never, T>]
+
+export const string = <T extends string = never, T2 extends ReadonlyArray<string> = never>({
+  pattern,
+  ...constraints
+}: StringConstraints<T, T2> = {}): JsonSchema<GetTypeFromStringConstraints<T, T2>> =>
   JsonSchema({
     type: 'string',
     ...constraints,
+    ...(pattern ? { pattern: pattern.source } : {}),
   })
 
 // Integer

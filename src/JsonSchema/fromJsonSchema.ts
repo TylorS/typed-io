@@ -2,9 +2,7 @@ import { JsonSchema, JsonSchemaDefinition } from './JsonSchema'
 
 import { Schema } from '@/Schema'
 
-export function fromJsonSchema<A>(
-  schema: JsonSchemaDefinition<A>,
-): Schema<unknown, never, A, A, never, A, unknown, readonly []> {
+export function fromJsonSchema<A>(schema: JsonSchemaDefinition<A>) {
   if (schema === true || schema === false) {
     return S.literal(schema) as any
   }
