@@ -6,6 +6,7 @@ import { identity } from './Identity'
 
 import { Annotation, makeAnnotation } from '@/Annotation/Annotation'
 import { arbitrary } from '@/Arbitrary/ArbitrarySchema'
+import { throwOnPoorSuccessRate } from '@/Arbitrary/throwOnPoorSuccessRate'
 import { Constructor } from '@/Constructor/Constructor'
 import { Decoder } from '@/Decoder/Decoder'
 import { Encoder } from '@/Encoder/Encoder'
@@ -28,6 +29,7 @@ export function string<T extends string = never, T2 extends ReadonlyArray<string
   Constructor<GetTypeFromStringConstraints<T, T2>, never, GetTypeFromStringConstraints<T, T2>>,
   Encoder<GetTypeFromStringConstraints<T, T2>, GetTypeFromStringConstraints<T, T2>>,
   JsonSchema<GetTypeFromStringConstraints<T, T2>>,
+  // eslint-disable-next-line @typescript-eslint/ban-types
   {},
   readonly [Annotation<typeof StringConstraintsAnnotation, StringConstraints<T, T2> | undefined>]
 > {
@@ -98,7 +100,7 @@ export function stringArbitraryFromConstraints<
   if (constraints.pattern) {
     const regexp = constraints.pattern
 
-    return arb.filter((s) => regexp.test(s))
+    return arb.filter(throwOnPoorSuccessRate(`String.pattern`, (s) => regexp.test(s)))
   }
 
   return arb
