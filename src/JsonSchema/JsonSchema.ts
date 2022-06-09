@@ -1,18 +1,19 @@
 import * as Branded from 'hkt-ts/Branded'
 import { Data } from 'hkt-ts/Data'
+import { DataEither } from 'hkt-ts/DataEither'
 import { Either } from 'hkt-ts/Either'
-import { JsonPrimitive } from 'hkt-ts/Json'
+import { Json, JsonPrimitive } from 'hkt-ts/Json'
 import { Maybe } from 'hkt-ts/Maybe'
 import { NonEmptyArray } from 'hkt-ts/NonEmptyArray'
 import { Progress } from 'hkt-ts/Progress'
 import { ReadonlyRecord } from 'hkt-ts/Record'
 import { RoseTree } from 'hkt-ts/RoseTree'
 import { Tree } from 'hkt-ts/Tree'
-import { flow, unsafeCoerce } from 'hkt-ts/function'
+import { unsafeCoerce } from 'hkt-ts/function'
 import { Integer, NonNegativeInteger } from 'hkt-ts/number'
 import * as JS from 'json-schema'
 import { Equals } from 'ts-toolbelt/out/Any/Equals'
-import { ReadonlyDeep } from 'ts-toolbelt/out/Object/Readonly'
+import { BuiltIn } from 'ts-toolbelt/out/Misc/BuiltIn'
 
 /* #region JsonSchema Core */
 export type JsonSchema<A> = Branded.Branded<{ readonly Decoded: A }, ReadonlyDeep<JS.JSONSchema7>>
@@ -22,11 +23,7 @@ export type JsonSchemaDefinition<A> = Branded.Branded<
   ReadonlyDeep<JS.JSONSchema7> | boolean
 >
 
-export type DecodedOf<T> = T extends boolean
-  ? T
-  : [T] extends [JsonSchemaDefinition<infer R>]
-  ? R
-  : never
+export type DecodedOf<T> = T extends boolean ? T : [T] extends [JsonSchema<infer R>] ? R : never
 
 /**
  * Construct a JsonSchema that's tagged with the decoded value and optionally an ID.
@@ -38,26 +35,52 @@ export const JsonSchema = <A>(schema: ReadonlyDeep<JS.JSONSchema7>): JsonSchema<
 
 /* #region JSON Schema Metadata Types */
 
+type ReadonlyDeep<O> = O extends Array<infer R>
+  ? ReadonlyArray<ReadonlyDeep<R>>
+  : {
+      +readonly [K in keyof O]: O[K] extends JS.JSONSchema7Array
+        ? ReadonlyArray<Json>
+        : O[K] extends Array<infer R>
+        ? ReadonlyArray<ReadonlyDeep<R>>
+        : O[K] extends Map<infer K, infer R>
+        ? ReadonlyMap<ReadonlyDeep<K>, ReadonlyDeep<R>>
+        : O[K] extends BuiltIn
+        ? O[K]
+        : ReadonlyDeep<O[K]>
+    }
+
 /**
  * All of the shared constraints for all JsonSchema
  */
-export interface SharedConstraints
-  extends ReadonlyDeep<
-    Pick<
-      JS.JSONSchema7,
-      | '$id'
-      | '$ref'
-      | '$schema'
-      | '$comment'
-      | '$defs'
-      | 'definitions'
-      | 'enum'
-      | 'const'
-      | 'title'
-      | 'description'
-      | 'examples'
-    >
-  > {}
+export interface SharedConstraints<
+  Const,
+  Enum extends ReadonlyArray<any> = ReadonlyArray<Const>,
+  Default = Const,
+> {
+  readonly $id?: string
+  readonly $ref?: string
+  readonly $schema?: JS.JSONSchema7Version
+  readonly $comment?: string
+  /**
+   * @see https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-00#section-8.2.4
+   * @see https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-validation-00#appendix-A
+   */
+  readonly $defs?: ReadonlyRecord<string, JsonSchemaDefinition<any>>
+  readonly title?: string
+  readonly description?: string
+  readonly default?: Default
+  readonly examples?: ReadonlyArray<GetSharedType<Const, Enum, Json>>
+  readonly const?: Const
+  readonly enum?: Enum
+}
+
+export type GetSharedType<Const, Enum, Fallback> = {
+  0: Const
+  1: {
+    0: Enum extends ReadonlyArray<any> ? Enum[number] : Enum
+    1: Fallback
+  }[Equals<never, Enum>]
+}[Equals<never, Const>]
 
 /**
  * Add an ID to a given JsonSchema
@@ -97,14 +120,6 @@ export const defsRef =
     $ref<A>()(`#/$defs/${id}`)
 
 /**
- * Create a Reference to a Schema defined within "definitions"
- */
-export const definitionsRef =
-  <A>() =>
-  <Ref extends string>(id: Ref) =>
-    $ref<A>()(`#/definitions/${id}`)
-
-/**
  * Create a Reference
  */
 export const self = <A>() => $ref<A>()('#')
@@ -124,14 +139,6 @@ export const $defs =
   <Defs extends ReadonlyRecord<string, JsonSchema<any>>>(defs: Defs) =>
   <A>(schema: JsonSchema<A>) =>
     JsonSchema<A>({ ...schema, $defs: { ...schema?.$defs, ...defs } })
-
-/**
- * Add or change the definitions associated with a Schema
- */
-export const definitions =
-  <Defs extends ReadonlyRecord<string, JsonSchema<any>>>(defs: Defs) =>
-  <A>(schema: JsonSchema<A>) =>
-    JsonSchema<A>({ ...schema, definitions: { ...schema?.definitions, ...defs } })
 /* #endregion */
 
 /* #region JSON Schema Primitives */
@@ -149,17 +156,14 @@ export const unknownArray = JsonSchema<ReadonlyArray<unknown>>({
 
 // String
 export interface StringConstraints<
-  T extends string = never,
-  T2 extends ReadonlyArray<string> = never,
+  Const extends string = never,
+  Enum extends ReadonlyArray<string> = never,
   Format extends StringFormat = never,
-> extends SharedConstraints {
+> extends SharedConstraints<Const, Enum, string> {
   readonly minLength?: NonNegativeInteger
   readonly maxLength?: NonNegativeInteger
   readonly format?: Format
   readonly pattern?: RegExp
-  readonly default?: string
-  readonly const?: T
-  readonly enum?: T2
   readonly contentEncoding?: string
   readonly contentMediaType?: string
 }
@@ -266,19 +270,13 @@ export type GetTypeFromStringConstraints<
 > = {
   0: {
     0: Branded.Branded<Branded.BrandOf<StringFormatToBrandedString[Format]>, T>
-    1: T
-  }[Equals<never, Format>]
-  1: {
-    0: {
-      0: Branded.Branded<Branded.BrandOf<StringFormatToBrandedString[Format]>, T2[number]>
-      1: T2[number]
-    }[Equals<never, Format>]
     1: {
-      0: StringFormatToBrandedString[Format]
-      1: string
-    }[Equals<never, Format>]
-  }[Equals<never, T2>]
-}[Equals<never, T>]
+      0: Branded.Branded<Branded.BrandOf<StringFormatToBrandedString[Format]>, T2[number]>
+      1: StringFormatToBrandedString[Format]
+    }[Equals<never, T2>]
+  }[Equals<never, T>]
+  1: GetSharedType<T, T2, string>
+}[Equals<never, Format>]
 
 export const string = <
   T extends string = never,
@@ -294,48 +292,58 @@ export const string = <
   })
 
 // Integer
-export interface IntegerConstraints extends SharedConstraints {
+export interface IntegerConstraints<
+  Const extends Integer = never,
+  Enum extends ReadonlyArray<Integer> = never,
+> extends SharedConstraints<Const, Enum, Integer> {
   readonly minimum?: Integer
   readonly maximum?: Integer
   readonly multipleOf?: Integer
   readonly exclusiveMaximum?: Integer
   readonly exclusiveMinimum?: Integer
-  readonly default?: Integer
 }
 
-export const integer = (constraints?: IntegerConstraints): JsonSchema<Integer> =>
-  JsonSchema<Integer>({
+export const integer = <Const extends Integer = never, Enum extends ReadonlyArray<Integer> = never>(
+  constraints?: IntegerConstraints<Const, Enum>,
+): JsonSchema<GetSharedType<Const, Enum, Integer>> =>
+  JsonSchema<GetSharedType<Const, Enum, Integer>>({
     type: 'integer',
     ...constraints,
   })
 
 // Number
-export interface NumberConstraints extends SharedConstraints {
+export interface NumberConstraints<
+  Const extends number = never,
+  Enum extends ReadonlyArray<number> = never,
+> extends SharedConstraints<Const, Enum, number> {
   readonly minimum?: number
   readonly maximum?: number
   readonly multipleOf?: number
   readonly exclusiveMaximum?: number
   readonly exclusiveMinimum?: number
-  readonly default?: number
 }
 
-export const number = (constraints?: NumberConstraints): JsonSchema<number> =>
+export const number = <Const extends number = never, Enum extends ReadonlyArray<number> = never>(
+  constraints?: NumberConstraints<Const, Enum>,
+): JsonSchema<GetSharedType<Const, Enum, number>> =>
   JsonSchema<number>({
     type: 'number',
     ...constraints,
   })
 
 // Boolean
-export const boolean = (constraints?: SharedConstraints): JsonSchema<boolean> =>
+export const boolean = <Const extends boolean = never, Enum extends ReadonlyArray<boolean> = never>(
+  constraints?: SharedConstraints<Const, Enum>,
+): JsonSchema<GetSharedType<Const, Enum, boolean>> =>
   JsonSchema({ type: 'boolean', ...constraints })
 
-const true_ = (constraints?: Omit<SharedConstraints, 'const' | 'enum'>) =>
+const true_ = (constraints?: Omit<SharedConstraints<true>, 'const' | 'enum'>) =>
   boolean({
     ...constraints,
     const: true,
   })
 
-const false_ = (constraints?: Omit<SharedConstraints, 'const' | 'enum'>) =>
+const false_ = (constraints?: Omit<SharedConstraints<false>, 'const' | 'enum'>) =>
   boolean({
     ...constraints,
     const: false,
@@ -344,7 +352,7 @@ const false_ = (constraints?: Omit<SharedConstraints, 'const' | 'enum'>) =>
 export { true_ as true, false_ as false }
 
 // Null
-const null_ = JsonSchema({ type: 'null' })
+const null_ = JsonSchema<null>({ type: 'null' })
 
 export { null_ as null }
 
@@ -354,7 +362,7 @@ export const nullable = <A>(schema: JsonSchema<A>): JsonSchema<A | null> =>
   })
 
 // Array
-export interface ArrayConstraints<A> extends SharedConstraints {
+export interface ArrayConstraints<A> extends SharedConstraints<ReadonlyArray<A>> {
   readonly minContains?: number
   readonly maxContains?: number
   readonly uniqueItems?: boolean
@@ -365,12 +373,12 @@ export const array = <A>(items: JsonSchema<A>, constraints?: ArrayConstraints<A>
   JsonSchema<ReadonlyArray<A>>({
     type: 'array',
     contains: items,
-    ...(constraints as JS.JSONSchema7),
-  })
+    ...constraints,
+  } as JS.JSONSchema7)
 
 // Tuple
 export interface TupleConstraints<A extends ReadonlyArray<JsonSchemaDefinition<any>>>
-  extends SharedConstraints {
+  extends SharedConstraints<{ readonly [K in keyof A]: DecodedOf<A[K]> }> {
   readonly default?: { readonly [K in keyof A]: DecodedOf<A[K]> }
 }
 
@@ -383,12 +391,13 @@ export const tuple = <A extends ReadonlyArray<JsonSchemaDefinition<any>>>(
     items,
     minItems: items.length,
     maxItems: items.length,
-    ...(constraints as JS.JSONSchema7),
+    ...constraints,
   })
 
 // Record
 
-export interface RecordConstraints<K extends string, A> extends SharedConstraints {
+export interface RecordConstraints<K extends string, A>
+  extends SharedConstraints<ReadonlyRecord<K, A>> {
   readonly maxProperties?: number
   readonly minProperties?: number
   readonly patternProperties?: ReadonlyRecord<string, JsonSchemaDefinition<string>>
@@ -402,9 +411,9 @@ export const record = <A, K extends string = string>(
 ) =>
   JsonSchema<ReadonlyRecord<K, A>>({
     type: 'object',
-    ...(constraints as JS.JSONSchema7),
+    ...constraints,
     additionalProperties: codomain,
-  })
+  } as JS.JSONSchema7)
 
 // Struct
 
@@ -420,11 +429,16 @@ export class Property<A, IsOptional extends boolean> {
 
 export const prop = <A>(schema: JsonSchema<A>) => new Property(schema, false)
 
-export interface StructConstraints<K extends string, B> extends SharedConstraints {
+export interface StructConstraints<
+  A extends ReadonlyRecord<string, Property<any, boolean>>,
+  K extends string,
+  B,
+> extends SharedConstraints<BuildStruct<A> & StructAdditionalProperties<B>> {
   readonly patternProperties?: ReadonlyRecord<string, JsonSchemaDefinition<string>>
   readonly propertyNames?: JsonSchemaDefinition<K> | undefined
   readonly additionalProperties?: JsonSchemaDefinition<B> | undefined
   readonly dependencies?: ReadonlyRecord<K, NonEmptyArray<K>>
+  readonly default?: BuildStruct<A> & StructAdditionalProperties<B>
 }
 
 export const struct = <
@@ -433,7 +447,7 @@ export const struct = <
   B = never,
 >(
   structure: A,
-  constraints?: StructConstraints<K, B>,
+  constraints?: StructConstraints<A, K, B>,
 ): JsonSchema<BuildStruct<A> & StructAdditionalProperties<B>> => {
   const entries = Object.entries(structure)
   const required = entries.flatMap(([k, v]) => (v.isOptional ? [] : [k]))
@@ -441,7 +455,7 @@ export const struct = <
 
   return JsonSchema<BuildStruct<A> & StructAdditionalProperties<B>>({
     type: 'object',
-    ...(constraints as JS.JSONSchema7),
+    ...constraints,
     properties,
     required,
   })
@@ -468,7 +482,7 @@ export type StructAdditionalProperties<A> = {
 }[Equals<never, A>]
 /* #endregion */
 
-/* #region JSONS Schema Constructors */
+/* #region JSON Schema Constructors */
 /**
  * Construct a JSON Schema from a JSON Primitive literal
  */
@@ -510,7 +524,7 @@ type ToIntersection<A extends ReadonlyArray<any>, R = unknown> = A extends reado
   : { readonly [K in keyof R]: R[K] }
 
 export const sum =
-  <T extends Readonly<Record<PropertyKey, any>>>(constraints?: SharedConstraints) =>
+  <T extends Readonly<Record<PropertyKey, any>>>(constraints?: SharedConstraints<T>) =>
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   <Tag extends keyof T>(_tag: Tag) =>
   <A extends SumJsonSchemas<T, Tag>>(schemas: A): JsonSchema<T> =>
@@ -536,8 +550,11 @@ export const branded =
   (schema: JsonSchema<Branded.ValueOf<B>>): JsonSchema<B> =>
     unsafeCoerce(schema)
 
-export const maybe = <A>(value: JsonSchema<A>): JsonSchema<Maybe<A>> =>
-  sum<Maybe<A>>()('tag')({
+export const maybe = <A>(
+  value: JsonSchema<A>,
+  constraints?: SharedConstraints<Maybe<A>>,
+): JsonSchema<Maybe<A>> =>
+  sum<Maybe<A>>(constraints)('tag')({
     Nothing: struct({
       tag: prop(string({ const: 'Nothing' })),
     }),
@@ -547,8 +564,12 @@ export const maybe = <A>(value: JsonSchema<A>): JsonSchema<Maybe<A>> =>
     }),
   })
 
-export const either = <E, A>(left: JsonSchema<E>, right: JsonSchema<A>): JsonSchema<Either<E, A>> =>
-  sum<Either<E, A>>()('tag')({
+export const either = <E, A>(
+  left: JsonSchema<E>,
+  right: JsonSchema<A>,
+  constraints?: SharedConstraints<Either<E, A>>,
+): JsonSchema<Either<E, A>> =>
+  sum<Either<E, A>>(constraints)('tag')({
     Left: struct({
       tag: prop(string({ const: 'Left' })),
       left: prop(left),
@@ -568,8 +589,11 @@ export const progress = (
     total: prop(maybe(total)),
   })
 
-export const data = <A>(value: JsonSchema<A>): JsonSchema<Data<A>> =>
-  sum<Data<A>>()('tag')({
+export const data = <A>(
+  value: JsonSchema<A>,
+  constraints?: SharedConstraints<Data<A>>,
+): JsonSchema<Data<A>> =>
+  sum<Data<A>>(constraints)('tag')({
     NoData: struct({
       tag: prop(string({ const: 'NoData' })),
     }),
@@ -588,10 +612,18 @@ export const data = <A>(value: JsonSchema<A>): JsonSchema<Data<A>> =>
     }),
   })
 
-export const dataEither = flow(either, data)
+export const dataEither = <E, A>(
+  E: JsonSchema<E>,
+  A: JsonSchema<A>,
+  constraints?: SharedConstraints<DataEither<E, A>>,
+): JsonSchema<DataEither<E, A>> => data(either(E, A), constraints)
 
-export const tree = <P, C>(parent: JsonSchema<P>, child: JsonSchema<C>): JsonSchema<Tree<P, C>> =>
-  sum<Tree<P, C>>()('tag')({
+export const tree = <P, C>(
+  parent: JsonSchema<P>,
+  child: JsonSchema<C>,
+  constraints?: SharedConstraints<Tree<P, C>>,
+): JsonSchema<Tree<P, C>> =>
+  sum<Tree<P, C>>(constraints)('tag')({
     Parent: struct({
       tag: prop(string({ const: 'Parent' })),
       value: prop(parent),

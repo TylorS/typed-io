@@ -4,7 +4,6 @@ import * as S from 'hkt-ts/string'
 
 import { identity } from './Identity'
 
-import { Annotation, makeAnnotation } from '@/Annotation/Annotation'
 import { arbitrary } from '@/Arbitrary/ArbitrarySchema'
 import { throwOnPoorSuccessRate } from '@/Arbitrary/throwOnPoorSuccessRate'
 import { Constructor } from '@/Constructor/Constructor'
@@ -14,39 +13,48 @@ import {
   GetTypeFromStringConstraints,
   JsonSchema,
   StringConstraints,
+  StringFormat,
 } from '@/JsonSchema/JsonSchema'
 import { jsonSchema } from '@/JsonSchema/JsonSchemaSchema'
 import { Schema } from '@/Schema'
 
-export const StringConstraintsAnnotation = makeAnnotation<
-  StringConstraints<any, any> | undefined
->()('StringConstraints')
-
-export function string<T extends string = never, T2 extends ReadonlyArray<string> = never>(
-  constraints?: StringConstraints<T, T2>,
+export function string<
+  T extends string = never,
+  T2 extends ReadonlyArray<string> = never,
+  Format extends StringFormat = never,
+>(
+  constraints?: StringConstraints<T, readonly [...T2], Format>,
 ): Schema<
-  Decoder<unknown, never, GetTypeFromStringConstraints<T, T2>>,
-  Constructor<GetTypeFromStringConstraints<T, T2>, never, GetTypeFromStringConstraints<T, T2>>,
-  Encoder<GetTypeFromStringConstraints<T, T2>, GetTypeFromStringConstraints<T, T2>>,
-  JsonSchema<GetTypeFromStringConstraints<T, T2>>,
+  Decoder<unknown, never, GetTypeFromStringConstraints<T, readonly [...T2], Format>>,
+  Constructor<
+    GetTypeFromStringConstraints<T, readonly [...T2], Format>,
+    never,
+    GetTypeFromStringConstraints<T, readonly [...T2], Format>
+  >,
+  Encoder<
+    GetTypeFromStringConstraints<T, readonly [...T2], Format>,
+    GetTypeFromStringConstraints<T, readonly [...T2], Format>
+  >,
+  JsonSchema<GetTypeFromStringConstraints<T, readonly [...T2], Format>>,
   // eslint-disable-next-line @typescript-eslint/ban-types
   {},
-  readonly [Annotation<typeof StringConstraintsAnnotation, StringConstraints<T, T2> | undefined>]
+  readonly []
 > {
   return pipe(
     identity(stringRefinementFromConstraints(constraints)),
     arbitrary((fc) => stringArbitraryFromConstraints(fc, constraints)),
-    jsonSchema((j) => j.string<T, T2>(constraints)),
-  ).addAnnotation(StringConstraintsAnnotation, constraints)
+    jsonSchema((j) => j.string(constraints)),
+  )
 }
 
 export function stringRefinementFromConstraints<
   T extends string = never,
   T2 extends ReadonlyArray<string> = never,
+  Format extends StringFormat = never,
 >(
-  constraints?: StringConstraints<T, T2>,
-): Refinement<unknown, GetTypeFromStringConstraints<T, T2>> {
-  return (u): u is GetTypeFromStringConstraints<T, T2> => {
+  constraints?: StringConstraints<T, T2, Format>,
+): Refinement<unknown, GetTypeFromStringConstraints<T, T2, Format>> {
+  return (u): u is GetTypeFromStringConstraints<T, T2, Format> => {
     if (!S.isString(u)) {
       return false
     }
@@ -65,6 +73,7 @@ export function stringRefinementFromConstraints<
 
     const { minLength = 0, maxLength = Infinity } = constraints
     const validPattern = constraints.pattern ? constraints.pattern.test(u) : true
+    // TODO: Test Formats of the string?
 
     return validPattern && u.length >= minLength && u.length <= maxLength
   }
@@ -73,18 +82,19 @@ export function stringRefinementFromConstraints<
 export function stringArbitraryFromConstraints<
   T extends string = never,
   T2 extends ReadonlyArray<string> = never,
+  Format extends StringFormat = never,
 >(
   fc: typeof import('fast-check'),
-  constraints?: StringConstraints<T, T2>,
-): import('fast-check').Arbitrary<GetTypeFromStringConstraints<T, T2>> {
-  type R = import('fast-check').Arbitrary<GetTypeFromStringConstraints<T, T2>>
+  constraints?: StringConstraints<T, T2, Format>,
+): import('fast-check').Arbitrary<GetTypeFromStringConstraints<T, T2, Format>> {
+  type R = import('fast-check').Arbitrary<GetTypeFromStringConstraints<T, T2, Format>>
 
   if (!constraints) {
     return fc.string() as R
   }
 
   if (constraints.const) {
-    return fc.constant(constraints.const)
+    return fc.constant(constraints.const) as R
   }
 
   if (constraints.enum) {
@@ -95,6 +105,7 @@ export function stringArbitraryFromConstraints<
     minLength: constraints.minLength,
     maxLength: constraints.maxLength,
   }
+  // TODO: Test Formats of the string?
   const arb = fc.string(fcConstraints) as R
 
   if (constraints.pattern) {
