@@ -35,18 +35,16 @@ export const JsonSchema = <A>(schema: ReadonlyDeep<JS.JSONSchema7>): JsonSchema<
 
 /* #region JSON Schema Metadata Types */
 
-type ReadonlyDeep<O> = O extends Array<infer R>
+type ReadonlyDeep<O> = O extends BuiltIn
+  ? O
+  : O extends Array<infer R>
   ? ReadonlyArray<ReadonlyDeep<R>>
+  : O extends Set<infer R>
+  ? ReadonlySet<ReadonlyDeep<R>>
+  : O extends Map<infer K, infer R>
+  ? ReadonlyMap<ReadonlyDeep<K>, ReadonlyDeep<R>>
   : {
-      +readonly [K in keyof O]: O[K] extends JS.JSONSchema7Array
-        ? ReadonlyArray<Json>
-        : O[K] extends Array<infer R>
-        ? ReadonlyArray<ReadonlyDeep<R>>
-        : O[K] extends Map<infer K, infer R>
-        ? ReadonlyMap<ReadonlyDeep<K>, ReadonlyDeep<R>>
-        : O[K] extends BuiltIn
-        ? O[K]
-        : ReadonlyDeep<O[K]>
+      +readonly [K in keyof O]: ReadonlyDeep<O[K]>
     }
 
 /**
@@ -143,7 +141,15 @@ export const $defs =
 
 /* #region JSON Schema Primitives */
 export const unknown = JsonSchema<unknown>({
-  type: ['array', 'boolean', 'integer', 'null', 'number', 'object', 'string'],
+  anyOf: [
+    { type: 'array' },
+    { type: 'boolean' },
+    { type: 'integer' },
+    { type: 'null' },
+    { type: 'number' },
+    { type: 'object' },
+    { type: 'string' },
+  ],
 })
 
 export const unknownRecord = JsonSchema<ReadonlyRecord<string, unknown>>({
