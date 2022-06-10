@@ -175,3 +175,9 @@ export function mapSchemaError<E1, E2>(f: (e1: E1) => E2) {
       }),
     )
 }
+
+export function makeAssociative<E>(): Associative<SchemaError<E>> {
+  return {
+    concat: (first, second) => new CompoundError(`Associative`, [first, second]),
+  }
+}

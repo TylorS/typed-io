@@ -1,206 +1,91 @@
-import { Annotation, AnnotationId, AnyAnnotation, ValueOf } from './Annotation/Annotation'
-import * as C from './Constructor/Constructor'
-import * as D from './Decoder/Decoder'
-import * as E from './Encoder/Encoder'
-import { JsonSchema } from './JsonSchema/JsonSchema'
+import { AnyAnnotation } from './Annotation/Annotation'
 
+/**
+ * Schema is an abstract type which keeps track of any number of capabilities, like deriving Decoders/Constructors,
+ * which can be expanded dynamically as various interpreters are implemented expanding their capability.
+ * Furthermore, a Schema can dynamically update or change the API it exposes atop of the current Schema, as
+ * well as be annotated to contain additional information that can be used to generate rich sets of information from.
+ */
 export abstract class Schema<
-  D extends D.AnyDecoder,
-  C extends C.AnyConstructor,
-  E extends E.AnyEncoder,
-  J extends JsonSchema<any>,
+  Capabilities extends AnyCapabilities,
   Api,
-  Annotations extends ReadonlyArray<AnyAnnotation>,
+  Annotations extends AnyAnnotations,
 > {
   static type: string
   abstract readonly type: string
   abstract get api(): Api
 
   readonly __NOT_AVAILABLE_AT_RUNTIME__!: {
-    readonly _Decoder: () => D
-    readonly _Constructor: () => C
-    readonly _Encoder: () => E
-    readonly _JsonSchema: () => J
+    readonly _Capabilities: () => Capabilities
     readonly _Api: () => Api
     readonly _Annotations: () => Annotations
   }
-
-  readonly addAnnotation = <Id, A, B extends A>(
-    id: AnnotationId<Id, A>,
-    value: B,
-  ): Schema<D, C, E, J, Api, readonly [...Annotations, Annotation<AnnotationId<Id, A>, B>]> =>
-    new SchemaAnnotation(this, [Annotation.make(id, value)] as const)
-
-  readonly addAnnotations = <Appended extends ReadonlyArray<AnyAnnotation>>(
-    ...annotations: Appended
-  ): Schema<D, C, E, J, Api, readonly [...Annotations, ...Appended]> =>
-    new SchemaAnnotation(this, annotations)
-
-  readonly compose = <
-    D2 extends D.AnyDecoder,
-    C2 extends C.AnyConstructor,
-    E2 extends E.AnyEncoder,
-    J2 extends JsonSchema<any>,
-    Api2,
-    Annotations2 extends ReadonlyArray<AnyAnnotation>,
-  >(
-    right: Schema<D2, C2, E2, J2, Api2, Annotations2>,
-  ): Schema<
-    D.Decoder<D.IntputOf<D>, D.ErrorOf<D> | D.ErrorOf<D2>, D.OutputOf<D2>>,
-    C2,
-    E2,
-    J2,
-    Api2,
-    readonly [...Annotations, ...Annotations2]
-  > => new SchemaCompose(this, right)
 }
 
-export type AnySchema =
-  | Schema<any, any, any, any, any, any>
-  | Schema<any, any, any, never, any, any>
+/**
+ * Helper for constructing functions/classes which depend on any Schema type.
+ */
+export type AnySchema = Schema<any, any, any>
 
-export const ContinuationSymbol = Symbol('@typed/Schema/Continuation')
+/**
+ * Helper for constructing functions/classes which depend on any Schema type with a minimum set of capabilities.
+ */
+export type AnySchemaWith<Capabilities extends AnyCapabilities> = Schema<Capabilities, any, any>
+
+/**
+ * Helper for constructing functions/classes which depend on any Schema Constructor type with a minimum set of capabilities.
+ */
+export type AnySchemaConstructorWith<Capabilities extends AnyCapabilities> = (
+  | (new () => AnySchemaWith<Capabilities>)
+  | (new (arg: any) => AnySchemaWith<Capabilities>)
+  | (new (...args: any) => AnySchemaWith<Capabilities>)
+) & {
+  readonly type: string
+}
+
+/**
+ * Helper for constructing functions/classes which depend on any Schema constructor type.
+ */
+export type AnySchemaConstructor = AnySchemaConstructorWith<any>
+
+/**
+ * Helper for constructing functions/classes which depend on any capability type a Schema might have.
+ */
+export type AnyCapabilities = Readonly<Record<PropertyKey, any>>
+
+/**
+ * Helper for constructing functions/classes which depend on any Annotation type a Schema might have.
+ */
+export type AnyAnnotations = ReadonlyArray<AnyAnnotation>
+
+/**
+ * Type-level helper for updating the Capabilities of a Schema
+ */
+export type UpdateCapabilities<C extends AnyCapabilities, D extends AnyCapabilities> = [
+  {
+    readonly [K in keyof C | keyof D]: K extends keyof D ? D[K] : C[K]
+  },
+] extends [infer R]
+  ? { readonly [K in keyof R]: R[K] }
+  : never
+
+export const ContinuationSymbol = Symbol('@typed/io/Continuation')
 export type ContinuationSymbol = typeof ContinuationSymbol
 
+/**
+ * HasContinuation is a capability that most Schema implementations should have, which allows
+ * for a uniform place to exist where Interpreters can traverse up the Tree of Schemas to derive
+ * all the capabilities a Schema might have.
+ */
 export interface HasContinuation {
   readonly [ContinuationSymbol]: AnySchema
 }
 
-export function hasContinuation<
-  D extends D.AnyDecoder,
-  C extends C.AnyConstructor,
-  E extends E.AnyEncoder,
-  J extends JsonSchema<any>,
-  Api,
-  Annotations extends ReadonlyArray<AnyAnnotation>,
->(
-  schema: Schema<D, C, E, J, Api, Annotations>,
-): schema is Schema<D, C, E, J, Api, Annotations> & HasContinuation {
+/**
+ * Checks to see if a Schema has a Continuation
+ */
+export function hasContinuation<C extends AnyCapabilities, Api, Annotations extends AnyAnnotations>(
+  schema: Schema<C, Api, Annotations>,
+): schema is Schema<C, Api, Annotations> & HasContinuation {
   return ContinuationSymbol in schema
 }
-
-export type GetTypeOf<
-  T extends AnySchema,
-  K extends keyof T['__NOT_AVAILABLE_AT_RUNTIME__'],
-> = T['__NOT_AVAILABLE_AT_RUNTIME__'][K] extends () => infer R ? R : never
-
-export type DecoderOf<T extends AnySchema> = GetTypeOf<T, '_Decoder'>
-export type DecoderInputOf<T extends AnySchema> = D.IntputOf<DecoderOf<T>>
-export type DecoderErrorOf<T extends AnySchema> = D.ErrorOf<DecoderOf<T>>
-export type DecodedOf<T extends AnySchema> = D.OutputOf<DecoderOf<T>>
-
-export type ConstructorOf<T extends AnySchema> = GetTypeOf<T, '_Constructor'>
-export type ConstructorInputOf<T extends AnySchema> = D.IntputOf<ConstructorOf<T>>
-export type ConstructorErrorOf<T extends AnySchema> = D.ErrorOf<ConstructorOf<T>>
-export type ConstructorOutputOf<T extends AnySchema> = D.OutputOf<ConstructorOf<T>>
-
-export type EncoderOf<T extends AnySchema> = GetTypeOf<T, '_Encoder'>
-export type EncoderInputOf<T extends AnySchema> = E.InputOf<EncoderOf<T>>
-export type EncodedOf<T extends AnySchema> = E.OutputOf<EncoderOf<T>>
-
-export type JsonSchemaOf<T extends AnySchema> = GetTypeOf<T, '_JsonSchema'>
-
-export type ApiOf<T extends AnySchema> = GetTypeOf<T, '_Api'>
-
-export type AnnotationsOf<T extends AnySchema> = GetTypeOf<T, '_Annotations'>
-
-export class SchemaAnnotation<
-    D extends D.AnyDecoder,
-    C extends C.AnyConstructor,
-    E extends E.AnyEncoder,
-    J extends JsonSchema<any>,
-    Api,
-    Annotations extends ReadonlyArray<AnyAnnotation>,
-    Appended extends ReadonlyArray<AnyAnnotation>,
-  >
-  extends Schema<D, C, E, J, Api, readonly [...Annotations, ...Appended]>
-  implements HasContinuation
-{
-  static type = 'Annotation'
-  readonly type = SchemaAnnotation.type;
-  readonly [ContinuationSymbol] = this.schema
-
-  constructor(
-    readonly schema: Schema<D, C, E, J, Api, Annotations>,
-    readonly annotations: Appended,
-  ) {
-    super()
-  }
-
-  get api() {
-    return this.schema.api
-  }
-}
-
-export type ToAnnotations<Ids extends ReadonlyArray<any>> = Ids extends readonly [
-  infer Head,
-  ...infer Tail,
-]
-  ? readonly [Annotation<Head, ValueOf<Head>>, ...ToAnnotations<Tail>]
-  : []
-
-export class SchemaCompose<
-  D extends D.AnyDecoder,
-  C extends C.AnyConstructor,
-  E extends E.AnyEncoder,
-  J extends JsonSchema<any>,
-  Api,
-  Annotations extends ReadonlyArray<AnyAnnotation>,
-  D2 extends D.AnyDecoder,
-  C2 extends C.AnyConstructor,
-  E2 extends E.AnyEncoder,
-  J2 extends JsonSchema<any>,
-  Api2,
-  Annotations2 extends ReadonlyArray<AnyAnnotation>,
-> extends Schema<
-  D.Decoder<D.IntputOf<D>, D.ErrorOf<D> | D.ErrorOf<D2>, D.OutputOf<D2>>,
-  C2,
-  E2,
-  J2,
-  Api2,
-  readonly [...Annotations, ...Annotations2]
-> {
-  static type = 'Compose'
-  readonly type = SchemaCompose.type
-
-  constructor(
-    readonly left: Schema<D, C, E, J, Api, Annotations>,
-    readonly right: Schema<D2, C2, E2, J2, Api2, Annotations2>,
-  ) {
-    super()
-  }
-
-  get api() {
-    return this.right.api
-  }
-}
-
-export const compose =
-  <
-    D2 extends D.AnyDecoder,
-    C2 extends C.AnyConstructor,
-    E2 extends E.AnyEncoder,
-    J2 extends JsonSchema<any>,
-    Api2,
-    Annotations2 extends ReadonlyArray<AnyAnnotation>,
-  >(
-    right: Schema<D2, C2, E2, J2, Api2, Annotations2>,
-  ) =>
-  <
-    D extends D.AnyDecoder,
-    C extends C.AnyConstructor,
-    E extends E.AnyEncoder,
-    J extends JsonSchema<any>,
-    Api,
-    Annotations extends ReadonlyArray<AnyAnnotation>,
-  >(
-    left: Schema<D, C, E, J, Api, Annotations>,
-  ): Schema<
-    D.Decoder<D.IntputOf<D>, D.ErrorOf<D> | D.ErrorOf<D2>, D.OutputOf<D2>>,
-    C2,
-    E2,
-    J2,
-    Api2,
-    readonly [...Annotations, ...Annotations2]
-  > =>
-    new SchemaCompose(left, right)

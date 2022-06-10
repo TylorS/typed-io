@@ -1,19 +1,34 @@
-import { AnyAnnotation } from '@/Annotation/Annotation'
-import { AnyConstructor } from '@/Constructor/Constructor'
-import * as Decoder from '@/Decoder/Decoder'
-import { AnyEncoder } from '@/Encoder/Encoder'
-import { JsonSchema } from '@/JsonSchema/JsonSchema'
-import { ContinuationSymbol, HasContinuation, Schema } from '@/Schema'
+import { Refinement } from 'hkt-ts/Refinement'
 
-export class GuardSchema<
-    D extends Decoder.AnyDecoder,
-    C extends AnyConstructor,
-    E extends AnyEncoder,
-    J extends JsonSchema<any>,
-    Api,
-    Annotations extends ReadonlyArray<AnyAnnotation>,
-  >
-  extends Schema<D, C, E, J, Api, Annotations>
+import { Guard } from './Guard'
+
+import {
+  AnyAnnotations,
+  AnyCapabilities,
+  AnySchemaWith,
+  ContinuationSymbol,
+  HasContinuation,
+  Schema,
+  UpdateCapabilities,
+} from '@/Schema'
+
+export const GUARD = Symbol('@typed/io/GUARD')
+export type GUARD = typeof GUARD
+
+export type AnyGuardCapability = Readonly<Record<GUARD, Guard<any>>>
+
+export type GuardOf<A> = A extends AnySchemaWith<infer R>
+  ? GUARD extends keyof R
+    ? R[GUARD]
+    : never
+  : never
+
+export interface GuardCapability<A> {
+  readonly [GUARD]: Guard<A>
+}
+
+export class GuardSchema<C extends AnyCapabilities, Api, Annotations extends AnyAnnotations, A>
+  extends Schema<UpdateCapabilities<C, GuardCapability<A>>, Api, Annotations>
   implements HasContinuation
 {
   static type = 'Guard' as const
@@ -23,27 +38,19 @@ export class GuardSchema<
     return this.schema.api
   }
 
-  [ContinuationSymbol] = this.schema
+  readonly [ContinuationSymbol] = this.schema
 
   constructor(
-    readonly schema: Schema<D, C, E, J, Api, Annotations>,
-    readonly guard: (u: unknown) => u is Decoder.OutputOf<D>,
+    readonly schema: Schema<C, Api, Annotations>,
+    readonly guard: Refinement<unknown, A>,
   ) {
     super()
   }
 }
 
 export const guard =
-  <O>(guard: (u: unknown) => u is O) =>
-  <
-    DI,
-    DE,
-    C extends AnyConstructor,
-    E extends AnyEncoder,
-    J extends JsonSchema<any>,
-    Api,
-    Annotations extends ReadonlyArray<AnyAnnotation>,
-  >(
-    schema: Schema<Decoder.Decoder<DI, DE, O>, C, E, J, Api, Annotations>,
-  ): Schema<Decoder.Decoder<DI, DE, O>, C, E, J, Api, Annotations> =>
+  <A>(guard: Refinement<unknown, A>) =>
+  <C extends AnyCapabilities, Api, Annotations extends AnyAnnotations>(
+    schema: Schema<C, Api, Annotations>,
+  ): Schema<UpdateCapabilities<C, GuardCapability<A>>, Api, Annotations> =>
     new GuardSchema(schema, guard)

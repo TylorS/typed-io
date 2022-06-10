@@ -1,4 +1,6 @@
+export * from './boolean'
+export * from './compose'
 export * from './Decoder'
-export * from './DecoderSchema'
 export * from './fromGuard'
 export * from './fromRefinement'
+export * from './refine'

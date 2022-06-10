@@ -1,41 +1,17 @@
 import { Refinement } from 'hkt-ts/Refinement'
 
-import { Constructor } from '@/Constructor/Constructor'
-import { Decoder } from '@/Decoder/Decoder'
-import { Encoder } from '@/Encoder/Encoder'
 import { Schema } from '@/Schema'
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export class IdentitySchema<A> extends Schema<
-  Decoder<unknown, never, A>,
-  Constructor<A, never, A>,
-  Encoder<A, A>,
-  never,
-  {
-    readonly refinement: Refinement<unknown, A>
-  },
-  readonly []
-> {
-  static type = 'Identity'
+export class IdentitySchema<A> extends Schema<IdentitySchemaCapabilities<A>, never, readonly []> {
+  static type = '@typed/io/Identity' as const
   readonly type = IdentitySchema.type
-  readonly api = {
-    refinement: this.refinement,
-  }
+  readonly api!: never
 
   constructor(readonly refinement: Refinement<unknown, A>) {
     super()
   }
 }
 
-export const identity = <A>(
-  refinement: Refinement<unknown, A>,
-): Schema<
-  Decoder<unknown, never, A>,
-  Constructor<A, never, A>,
-  Encoder<A, A>,
-  never,
-  {
-    readonly refinement: Refinement<unknown, A>
-  },
-  readonly []
-> => new IdentitySchema(refinement)
+// Intended to be extended by other interpreter implementations
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export interface IdentitySchemaCapabilities<A> {}
