@@ -1,4 +1,5 @@
 export * as Annotation from './Annotation/index'
+export * as Arbitrary from './Arbitrary/index'
 export * as Constructor from './Constructor/index'
 export * as Decoder from './Decoder/index'
 export * as Encoder from './Encoder/index'

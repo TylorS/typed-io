@@ -11,8 +11,6 @@ declare module '@/schemas/identity' {
   }
 }
 
-export class IdentitySchemaGuardInterpereter extends Register<GuardInterpreter> {
-  constructor() {
-    super((i) => i.addGuardInterpreter(IdentitySchema, (s) => Guard(s.refinement)))
-  }
-}
+export const IdentitySchemaGuardInterpereter = Register.make<GuardInterpreter>((i) =>
+  i.add(IdentitySchema, (s) => Guard(s.refinement)),
+)

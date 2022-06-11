@@ -9,6 +9,8 @@ import {
 
 export class Register<I> {
   constructor(readonly register: (interpreter: I) => void) {}
+
+  static make = <I>(f: (interpreter: I) => void) => new Register(f)
 }
 
 export function makeSchemaInterpreter<C extends AnyCapabilities, A>(entityName: string) {
@@ -53,3 +55,27 @@ export function makeSchemaInterpreter<C extends AnyCapabilities, A>(entityName: 
     interpret,
   } as const
 }
+
+export abstract class BaseInterpreter<C extends AnyCapabilities, Output> {
+  readonly interpreter: SchemaInterpreter<C, Output> = makeSchemaInterpreter<C, Output>(
+    this.entityName,
+  )
+  readonly add = this.interpreter.add
+  readonly interpret = this.interpreter.interpret
+
+  constructor(readonly entityName: string) {}
+}
+
+export const interpreter = <C extends AnyCapabilities, Output>(entityName: string) =>
+  class Interpreter<R extends BaseInterpreter<C, Output>> extends BaseInterpreter<C, Output> {
+    constructor(...registrations: ReadonlyArray<Register<R>>) {
+      super(entityName)
+
+      for (const r of registrations) {
+        r.register(this as any as R)
+      }
+    }
+  }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars,prettier/prettier
+export type SchemaInterpreter<C extends AnyCapabilities, A> = ReturnType<typeof makeSchemaInterpreter<C, A>>

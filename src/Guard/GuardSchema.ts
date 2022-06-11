@@ -1,7 +1,6 @@
 import { Refinement } from 'hkt-ts/Refinement'
 
-import { Guard } from './Guard'
-
+import { Guard } from '@/Guard/Guard'
 import {
   AnyAnnotations,
   AnyCapabilities,
@@ -9,13 +8,12 @@ import {
   ContinuationSymbol,
   HasContinuation,
   Schema,
-  UpdateCapabilities,
 } from '@/Schema'
 
 export const GUARD = Symbol('@typed/io/GUARD')
 export type GUARD = typeof GUARD
 
-export type AnyGuardCapability = Readonly<Record<GUARD, Guard<any>>>
+export type AnyGuardCapability = GuardCapability<any>
 
 export type GuardOf<A> = A extends AnySchemaWith<infer R>
   ? GUARD extends keyof R
@@ -23,12 +21,14 @@ export type GuardOf<A> = A extends AnySchemaWith<infer R>
     : never
   : never
 
+export type GuardOutputOf<T> = [GuardOf<T>] extends [Guard<infer R>] ? R : never
+
 export interface GuardCapability<A> {
   readonly [GUARD]: Guard<A>
 }
 
 export class GuardSchema<C extends AnyCapabilities, Api, Annotations extends AnyAnnotations, A>
-  extends Schema<UpdateCapabilities<C, GuardCapability<A>>, Api, Annotations>
+  extends Schema<Omit<C, GUARD> & GuardCapability<A>, Api, Annotations>
   implements HasContinuation
 {
   static type = 'Guard' as const
@@ -52,5 +52,5 @@ export const guard =
   <A>(guard: Refinement<unknown, A>) =>
   <C extends AnyCapabilities, Api, Annotations extends AnyAnnotations>(
     schema: Schema<C, Api, Annotations>,
-  ): Schema<UpdateCapabilities<C, GuardCapability<A>>, Api, Annotations> =>
+  ): Schema<Omit<C, GUARD> & GuardCapability<A>, Api, Annotations> =>
     new GuardSchema(schema, guard)

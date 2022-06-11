@@ -35,11 +35,8 @@ export type AnySchemaWith<Capabilities extends AnyCapabilities> = Schema<Capabil
 /**
  * Helper for constructing functions/classes which depend on any Schema Constructor type with a minimum set of capabilities.
  */
-export type AnySchemaConstructorWith<Capabilities extends AnyCapabilities> = (
-  | (new () => AnySchemaWith<Capabilities>)
-  | (new (arg: any) => AnySchemaWith<Capabilities>)
-  | (new (...args: any) => AnySchemaWith<Capabilities>)
-) & {
+export type AnySchemaConstructorWith<Capabilities extends AnyCapabilities> = {
+  new (...args: any): AnySchemaWith<Capabilities>
   readonly type: string
 }
 
