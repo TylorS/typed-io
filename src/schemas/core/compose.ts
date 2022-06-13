@@ -1,4 +1,5 @@
 import { AnyAnnotations, AnyCapabilities, Schema } from '@/Schema'
+import { DropNever } from '@/internal'
 
 export class ComposeSchema<
   C1 extends AnyCapabilities,
@@ -7,7 +8,11 @@ export class ComposeSchema<
   C2 extends AnyCapabilities,
   Api2,
   Annotations2 extends AnyAnnotations,
-> extends Schema<ComposeCapabilities<C1, C2>, Api2, readonly [...Annotations, ...Annotations2]> {
+> extends Schema<
+  DropNever<ComposeCapabilities<C1, C2>>,
+  Api2,
+  readonly [...Annotations, ...Annotations2]
+> {
   static type = '@typed/io/Compose' as const
   readonly type = ComposeSchema.type
 
@@ -23,9 +28,10 @@ export class ComposeSchema<
   }
 }
 
-// Intended to be extended by other interpreter implementations via module augmentation
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
+/**
+ * Intended to be extended by other interpreter implementations via module augmentation
+ * to accurately track the possible outputs of your schemas given the right interpreter.
+ */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export interface ComposeCapabilities<C1 extends AnyCapabilities, C2 extends AnyCapabilities> {}
 
@@ -38,5 +44,9 @@ export const compose =
   ) =>
   <C1 extends AnyCapabilities, Api1, Annotations extends AnyAnnotations>(
     left: Schema<C1, Api1, Annotations>,
-  ): Schema<ComposeCapabilities<C1, C2>, Api2, readonly [...Annotations, ...Annotations2]> =>
+  ): Schema<
+    DropNever<ComposeCapabilities<C1, C2>>,
+    Api2,
+    readonly [...Annotations, ...Annotations2]
+  > =>
     new ComposeSchema(left, right)

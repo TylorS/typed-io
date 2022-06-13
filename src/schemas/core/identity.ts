@@ -12,8 +12,9 @@ export class IdentitySchema<A> extends Schema<IdentitySchemaCapabilities<A>, nev
   }
 }
 
-// Intended to be extended by other interpreter implementations via module augmentation
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/**
+ * Intended to be extended by other interpreter implementations via module augmentation
+ */ // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export interface IdentitySchemaCapabilities<A> {}
 
 export const identity = <A>(

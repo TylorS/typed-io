@@ -1,3 +1,4 @@
+import { HKT3, Params } from 'hkt-ts'
 import { These } from 'hkt-ts/These'
 
 import { SchemaError } from '@/SchemaError/SchemaError'
@@ -19,3 +20,7 @@ export type IntputOf<T> = [T] extends [Decoder<infer R, infer _, infer __>] ? R 
 export type ErrorOf<T> = [T] extends [Decoder<infer _, infer R, infer __>] ? R : never
 export type OutputOf<T> = [T] extends [Decoder<infer _, infer __, infer R>] ? R : never
 /* eslint-enable @typescript-eslint/no-unused-vars */
+
+export interface DecoderHKT extends HKT3 {
+  readonly type: Decoder<this[Params.R], this[Params.E], this[Params.A]>
+}

@@ -1,4 +1,5 @@
-import { Branded, Combine, ValueOf } from 'hkt-ts/Branded'
+import type { HKT, Params } from 'hkt-ts'
+import { Brand, BrandOf, Branded, Combine, ValueOf } from 'hkt-ts/Branded'
 import { Data } from 'hkt-ts/Data'
 import { Either } from 'hkt-ts/Either'
 import { JsonPrimitive } from 'hkt-ts/Json'
@@ -8,13 +9,20 @@ import { ReadonlyRecord } from 'hkt-ts/Record'
 import * as R from 'hkt-ts/Refinement'
 import { RoseTree } from 'hkt-ts/RoseTree'
 import { Tree } from 'hkt-ts/Tree'
-import * as B from 'hkt-ts/boolean'
 import { flow, pipe, unsafeCoerce } from 'hkt-ts/function'
 import * as N from 'hkt-ts/number'
-import * as S from 'hkt-ts/string'
+
+import { ArrayConstraints, RecordConstraints, TupleConstraints } from '@/JsonSchema/JsonSchema'
+import { Property, prop } from '@/Schema'
+import { memoizeOnce } from '@/internal'
+import * as Refinements from '@/refinements/index'
 
 export interface Guard<A> {
   readonly is: R.Refinement<unknown, A>
+}
+
+export interface GuardHKT extends HKT {
+  readonly type: Guard<this[Params.A]>
 }
 
 export type AnyGuard = Guard<any>
@@ -30,9 +38,10 @@ export const branded =
   (g: Guard<ValueOf<B>>): Guard<B> =>
     unsafeCoerce(g)
 
-export const boolean = Guard(B.isBoolean)
-export const number = Guard(N.isNumber)
-export const string = Guard(S.isString)
+export const boolean = flow(Refinements.isBoolean, Guard)
+export const number = flow(Refinements.isNumber, Guard)
+export const integer = flow(Refinements.isInteger, Guard)
+export const string = flow(Refinements.isString, Guard)
 
 export const isNull = (x: unknown): x is null => x === null
 export const isUndefined = (x: unknown): x is undefined => x === undefined
@@ -72,89 +81,53 @@ type CombineRefinement<A, B> = A extends Branded<any, any>
 export const nullable = or(Guard(isNull))
 export const optional = or(Guard(isUndefined))
 
-export const isTrue = (x: unknown): x is true => x === true
-export const isFalse = (x: unknown): x is false => x === false
-
-const true_ = Guard(isTrue)
-const false_ = Guard(isFalse)
+const true_ = boolean({ const: true })
+const false_ = boolean({ const: false })
 
 export { true_ as true, false_ as false }
 
 export const refine =
   <A, B extends A>(refinement: R.Refinement<A, B>) =>
-  (guard: Guard<A>): Guard<B> =>
-    Guard(pipe(guard.is, R.compose(refinement)))
+  (guard: Guard<A>): Guard<ConcatRefinement<A, B>> =>
+    pipe(guard.is, R.compose(refinement), Guard) as Guard<ConcatRefinement<A, B>>
 
-export const integer = pipe(number, refine(N.isInteger))
-export const float = pipe(number, refine(N.isFloat))
-export const negative = pipe(number, refine(N.isNegative))
-export const nonNegative = pipe(number, refine(N.isNonNegative))
-export const nonPositive = pipe(number, refine(N.isNonPositive))
-export const nonZero = pipe(number, refine(N.isNonZero))
-export const positive = pipe(number, refine(N.isPositive))
-export const negativeInteger: Guard<N.NegativeInteger> = pipe(integer, and(negative))
-export const negativeFloat: Guard<N.NegativeFloat> = pipe(float, and(negative))
-export const nonNegativeInteger: Guard<N.NonNegativeInteger> = pipe(integer, and(nonNegative))
-export const nonNegativeFloat: Guard<N.NonNegativeFloat> = pipe(float, and(nonNegative))
-export const nonPositiveInteger: Guard<N.NonPositiveInteger> = pipe(integer, and(nonPositive))
-export const nonPositiveFloat: Guard<N.NonPositiveFloat> = pipe(float, and(nonPositive))
-export const nonZeroInteger: Guard<N.NonZeroInteger> = pipe(integer, and(nonZero))
-export const nonZeroFloat: Guard<N.NonZeroFloat> = pipe(float, and(nonZero))
-export const positiveInteger: Guard<N.PositiveInteger> = pipe(integer, and(positive))
-export const positiveFloat: Guard<N.PositiveFloat> = pipe(float, and(positive))
+type ConcatRefinement<T, U> = U extends Branded<any, any>
+  ? ValueOf<U> & Brand<BrandOf<T> & BrandOf<U>>
+  : U & Brand<BrandOf<T> & BrandOf<U>>
+
+export const not =
+  <A, B extends A>(refinement: R.Refinement<A, B>) =>
+  (guard: Guard<A>): Guard<Exclude<A, B>> =>
+    Guard(pipe(guard.is, R.compose(R.not(refinement))))
 
 export const unknownArray = Guard<readonly unknown[]>(Array.isArray)
 
-export const unknownRecord = Guard<Readonly<Record<PropertyKey, unknown>>>(
-  (u): u is Readonly<Record<PropertyKey, unknown>> =>
-    !!u && !Array.isArray(u) && typeof u === 'object',
-)
+export const unknownRecord = Guard(Refinements.isUnknownRecord)
 
 export const lazy = <A>(f: () => Guard<A>): Guard<A> => {
-  let memoed: Guard<A> | null = null
-  const get = () => {
-    if (!memoed) {
-      memoed = f()
-    }
-
-    return memoed
-  }
+  const get = memoizeOnce(f)
 
   return {
     is: (u): u is A => get().is(u),
   }
 }
 
-export const array = <A>(guard: Guard<A>): Guard<readonly A[]> =>
-  pipe(
-    unknownArray,
-    refine((u): u is ReadonlyArray<A> => u.every(guard.is)),
-  )
+export const array = <A>(guard: Guard<A>, constraints?: ArrayConstraints<A>): Guard<readonly A[]> =>
+  Guard(Refinements.isArray(guard.is, constraints))
 
 export const tuple = <A extends ReadonlyArray<A>>(
-  ...guards: { readonly [K in keyof A]: Guard<A[K]> }
-): Guard<A> =>
-  pipe(
-    unknownArray,
-    refine((u): u is A => u.length === guards.length && u.every((a, i) => guards[i].is(a))),
-  )
+  guards: {
+    readonly [K in keyof A]: Guard<A[K]>
+  },
+  constraints?: TupleConstraints<A>,
+): Guard<A> => Guard(Refinements.isTuple(guards, constraints))
 
-export const record = <A>(guard: Guard<A>): Guard<ReadonlyRecord<string, A>> =>
-  pipe(
-    unknownRecord,
-    refine((u): u is ReadonlyRecord<string, A> => Object.values(u).every(guard.is)),
-  )
+export const record = <A>(
+  guard: Guard<A>,
+  constraints?: RecordConstraints<string, A>,
+): Guard<ReadonlyRecord<string, A>> => Guard(Refinements.isRecord(guard.is, constraints))
 
-export class Property<A, IsOptional extends boolean> {
-  constructor(readonly guard: Guard<A>, readonly isOptional: IsOptional) {}
-
-  readonly optional = () => new Property(this.guard, true)
-  readonly required = () => new Property(this.guard, false)
-}
-
-export const prop = <A>(guard: Guard<A>) => new Property(guard, false)
-
-export const struct = <A extends Readonly<Record<PropertyKey, Property<any, any>>>>(
+export const struct = <A extends Readonly<Record<PropertyKey, Property<AnyGuard, boolean>>>>(
   properties: A,
 ): Guard<BuildStruct<A>> =>
   pipe(
@@ -165,7 +138,7 @@ export const struct = <A extends Readonly<Record<PropertyKey, Property<any, any>
           return true
         }
 
-        return prop.guard.is(u[k])
+        return prop.value.is(u[k])
       }),
     ),
   )
@@ -173,14 +146,14 @@ export const struct = <A extends Readonly<Record<PropertyKey, Property<any, any>
 export type BuildStruct<A> = [
   {
     readonly [K in keyof A as A[K] extends Property<any, true> ? K : never]?: A[K] extends Property<
-      infer R,
+      Guard<infer R>,
       boolean
     >
       ? R
       : never
   } & {
     readonly [K in keyof A as A[K] extends Property<any, false> ? K : never]: A[K] extends Property<
-      infer R,
+      Guard<infer R>,
       boolean
     >
       ? R
@@ -239,8 +212,8 @@ export const either = <E, A>(left: Guard<E>, right: Guard<A>): Guard<Either<E, A
   })
 
 export const progress: Guard<Progress> = struct({
-  loaded: prop(nonNegativeFloat),
-  total: prop(maybe(nonNegativeFloat)),
+  loaded: prop(branded<N.NonNegativeFloat>()(number())),
+  total: prop(maybe(branded<N.NonNegativeFloat>()(number()))),
 })
 
 export const data = <A>(value: Guard<A>): Guard<Data<A>> =>

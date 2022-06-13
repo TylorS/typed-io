@@ -1,4 +1,5 @@
 import { identity, pipe } from 'hkt-ts'
+import { RoseTree } from 'hkt-ts/RoseTree'
 import { makeFlatMap } from 'hkt-ts/These'
 import { Associative } from 'hkt-ts/Typeclass/Associative'
 
@@ -22,6 +23,10 @@ export type SchemaError<E> =
 
 export interface Compound<E> {
   readonly errors: ReadonlyArray<E>
+}
+
+export interface ToTree {
+  readonly toTree: () => RoseTree<string>
 }
 
 export const compound = <Tag extends string>(tag: Tag) =>
@@ -102,7 +107,7 @@ export class NamedError<Name extends string, E> extends single('Named')<E> {
   }
 }
 
-export function makeDecodeErrorAssociative<E>(name: string): Associative<SchemaError<E>> {
+export function makeSchemaErrorAssociative<E>(name: string): Associative<SchemaError<E>> {
   return {
     concat: (f, s) => {
       const fIsCompound = f.tag === 'Compound'
@@ -125,8 +130,8 @@ export function makeDecodeErrorAssociative<E>(name: string): Associative<SchemaE
   }
 }
 
-export function makeDecodeErrorFlatMap<E>(name: string) {
-  return makeFlatMap(makeDecodeErrorAssociative<E>(name))
+export function makeSchemaErrorFlatMap<E>(name: string) {
+  return makeFlatMap(makeSchemaErrorAssociative<E>(name))
 }
 
 export function matchSchemaError<Error, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P>(patterns: {
@@ -174,10 +179,4 @@ export function mapSchemaError<E1, E2>(f: (e1: E1) => E2) {
         UnexpectedKeys: identity,
       }),
     )
-}
-
-export function makeAssociative<E>(): Associative<SchemaError<E>> {
-  return {
-    concat: (first, second) => new CompoundError(`Associative`, [first, second]),
-  }
 }

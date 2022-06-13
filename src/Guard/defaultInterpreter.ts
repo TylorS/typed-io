@@ -1,12 +1,6 @@
 import { GuardInterpreter } from './Interpreter'
-import { ComposeSchemaGuardInterpereter } from './interpreters/compose'
-import { GuardSchemaGuardInterpereter } from './interpreters/guard'
-import { IdentitySchemaGuardInterpereter } from './interpreters/identity'
+import * as interpereters from './interpreters'
 
-export const defaultGuardInterpreter = new GuardInterpreter(
-  IdentitySchemaGuardInterpereter,
-  ComposeSchemaGuardInterpereter,
-  GuardSchemaGuardInterpereter,
-)
+export const defaultGuardInterpreter = new GuardInterpreter(...Object.values(interpereters))
 
 export const { interpret: toGuard } = defaultGuardInterpreter

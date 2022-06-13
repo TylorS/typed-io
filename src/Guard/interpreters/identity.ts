@@ -3,9 +3,9 @@ import { GUARD } from '../GuardSchema'
 import { GuardInterpreter } from '../Interpreter'
 
 import { Register } from '@/internal'
-import { IdentitySchema } from '@/schemas/identity'
+import { IdentitySchema } from '@/schemas/core/identity'
 
-declare module '@/schemas/identity' {
+declare module '@/schemas/core/identity' {
   export interface IdentitySchemaCapabilities<A> {
     readonly [GUARD]: Guard<A>
   }

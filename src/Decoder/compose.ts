@@ -1,11 +1,10 @@
-import { makeFlatMap } from 'hkt-ts/These'
 import { flow } from 'hkt-ts/function'
 
 import { Decoder } from './Decoder'
 
-import { makeAssociative } from '@/SchemaError/SchemaError'
+import { makeSchemaErrorFlatMap } from '@/SchemaError/SchemaError'
 
-const flatMap = makeFlatMap(makeAssociative<any>())
+const flatMap = makeSchemaErrorFlatMap<any>('Decoder.compose')
 
 export const compose =
   <A, E2, O>(right: Decoder<A, E2, O>) =>

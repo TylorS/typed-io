@@ -6,7 +6,6 @@
 // TODO: Eq
 // TODO: JsonSchema
 // TODO: Optics
-export * from './annotations'
-export * from './compose'
-export * from './identity'
-export * from './mapApi'
+export * from './boolean'
+export * from './number'
+export * from './string'

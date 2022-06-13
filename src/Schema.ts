@@ -86,3 +86,26 @@ export function hasContinuation<C extends AnyCapabilities, Api, Annotations exte
 ): schema is Schema<C, Api, Annotations> & HasContinuation {
   return ContinuationSymbol in schema
 }
+
+/**
+ * Construct a Property, which defaults to being required.
+ */
+export const prop = <A>(value: A) => new Property(value, false)
+
+/**
+ * A Property is a first class concept with @typed/io which allows tracking the optionality of properties
+ * within structures like JSON objects to be utilized by interpreters of Schemas.
+ */
+export class Property<A, IsOptional extends boolean> {
+  constructor(readonly value: A, readonly isOptional: IsOptional) {}
+
+  /**
+   * Make a Property Optional
+   */
+  readonly optional = () => new Property(this.value, true)
+
+  /**
+   * Make a Property Required
+   */
+  readonly required = () => new Property(this.value, false)
+}

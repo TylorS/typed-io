@@ -5,25 +5,18 @@ import { Decoder } from './Decoder'
 
 import { LeafError } from '@/SchemaError/SchemaError'
 
-export function fromRefinment<A, B extends A>(
+export function fromRefinment<A, B extends A, E>(
   refinement: Refinement<A, B>,
-): Decoder<A, RefinementError<A, B>, B> {
-  return new RefinementDecoder<A, B>(refinement)
+  onError: (a: A) => E,
+): Decoder<A, E, B> {
+  return new RefinementDecoder<A, B, E>(refinement, onError)
 }
 
-export class RefinementDecoder<A, B extends A> implements Decoder<A, RefinementError<A, B>, B> {
+export class RefinementDecoder<A, B extends A, E> implements Decoder<A, E, B> {
   static tag = 'Refinement'
   readonly tag = RefinementDecoder.tag
 
-  constructor(readonly refinement: Refinement<A, B>) {}
+  constructor(readonly refinement: Refinement<A, B>, readonly onError: (a: A) => E) {}
 
-  readonly decode = (a: A) =>
-    this.refinement(a) ? Right(a) : Left(new LeafError(new RefinementError(a, this.refinement)))
-}
-
-export class RefinementError<A, B extends A> {
-  static tag = 'Refinement'
-  readonly tag = 'Refinement'
-
-  constructor(readonly input: A, readonly refinement: Refinement<A, B>) {}
+  readonly decode = (a: A) => (this.refinement(a) ? Right(a) : Left(new LeafError(this.onError(a))))
 }

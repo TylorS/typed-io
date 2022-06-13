@@ -15,6 +15,8 @@ import * as JS from 'json-schema'
 import { Equals } from 'ts-toolbelt/out/Any/Equals'
 import { BuiltIn } from 'ts-toolbelt/out/Misc/BuiltIn'
 
+import { Property, prop } from '@/Schema'
+
 /* #region JsonSchema Core */
 export type JsonSchema<A> = Branded.Branded<{ readonly Decoded: A }, ReadonlyDeep<JS.JSONSchema7>>
 
@@ -383,14 +385,13 @@ export const array = <A>(items: JsonSchema<A>, constraints?: ArrayConstraints<A>
   } as JS.JSONSchema7)
 
 // Tuple
-export interface TupleConstraints<A extends ReadonlyArray<JsonSchemaDefinition<any>>>
-  extends SharedConstraints<{ readonly [K in keyof A]: DecodedOf<A[K]> }> {
-  readonly default?: { readonly [K in keyof A]: DecodedOf<A[K]> }
+export interface TupleConstraints<A extends ReadonlyArray<any>> extends SharedConstraints<A> {
+  readonly default?: A
 }
 
 export const tuple = <A extends ReadonlyArray<JsonSchemaDefinition<any>>>(
   items: readonly [...A],
-  constraints: TupleConstraints<A> = {},
+  constraints: TupleConstraints<{ readonly [K in keyof A]: DecodedOf<A[K]> }> = {},
 ) =>
   JsonSchema<{ readonly [K in keyof A]: DecodedOf<A[K]> }>({
     type: 'array',
@@ -406,7 +407,7 @@ export interface RecordConstraints<K extends string, A>
   extends SharedConstraints<ReadonlyRecord<K, A>> {
   readonly maxProperties?: number
   readonly minProperties?: number
-  readonly patternProperties?: ReadonlyRecord<string, JsonSchemaDefinition<string>>
+  readonly patternProperties?: ReadonlyRecord<string, JsonSchemaDefinition<A>>
   readonly required?: readonly K[]
   readonly default?: ReadonlyRecord<K, A>
 }
@@ -423,32 +424,23 @@ export const record = <A, K extends string = string>(
 
 // Struct
 
-export class Property<A, IsOptional extends boolean> {
-  static tag = 'Property' as const
-  readonly tag = Property.tag
-
-  constructor(readonly schema: JsonSchema<A>, readonly isOptional: IsOptional) {}
-
-  readonly optional = () => new Property(this.schema, true)
-  readonly required = () => new Property(this.schema, false)
-}
-
-export const prop = <A>(schema: JsonSchema<A>) => new Property(schema, false)
-
 export interface StructConstraints<
-  A extends ReadonlyRecord<string, Property<any, boolean>>,
+  A extends ReadonlyRecord<string, Property<JsonSchema<any>, boolean>>,
   K extends string,
   B,
 > extends SharedConstraints<BuildStruct<A> & StructAdditionalProperties<B>> {
   readonly patternProperties?: ReadonlyRecord<string, JsonSchemaDefinition<string>>
   readonly propertyNames?: JsonSchemaDefinition<K> | undefined
   readonly additionalProperties?: JsonSchemaDefinition<B> | undefined
-  readonly dependencies?: ReadonlyRecord<K, NonEmptyArray<K>>
+  readonly dependencies?: ReadonlyRecord<
+    K,
+    JsonSchemaDefinition<BuildStruct<A>[keyof BuildStruct<A>] | NonEmptyArray<K>>
+  >
   readonly default?: BuildStruct<A> & StructAdditionalProperties<B>
 }
 
 export const struct = <
-  A extends ReadonlyRecord<string, Property<any, boolean>>,
+  A extends ReadonlyRecord<string, Property<JsonSchema<any>, boolean>>,
   K extends keyof A & string,
   B = never,
 >(
@@ -457,7 +449,7 @@ export const struct = <
 ): JsonSchema<BuildStruct<A> & StructAdditionalProperties<B>> => {
   const entries = Object.entries(structure)
   const required = entries.flatMap(([k, v]) => (v.isOptional ? [] : [k]))
-  const properties = Object.fromEntries(entries.map(([k, v]) => [k, v.schema] as const))
+  const properties = Object.fromEntries(entries.map(([k, v]) => [k, v.value] as const))
 
   return JsonSchema<BuildStruct<A> & StructAdditionalProperties<B>>({
     type: 'object',
@@ -471,11 +463,11 @@ export const struct = <
 export type BuildStruct<A extends ReadonlyRecord<string, Property<any, boolean>>> = [
   {
     readonly [K in keyof A as A[K]['isOptional'] extends true ? K : never]?: DecodedOf<
-      A[K]['schema']
+      A[K]['value']
     >
   } & {
     readonly [K in keyof A as A[K]['isOptional'] extends false ? K : never]: DecodedOf<
-      A[K]['schema']
+      A[K]['value']
     >
   },
 ] extends [infer R]
