@@ -1,4 +1,4 @@
-import { identity, pipe } from 'hkt-ts'
+import { HKT, Params, identity, pipe } from 'hkt-ts'
 import { RoseTree } from 'hkt-ts/RoseTree'
 import { makeFlatMap } from 'hkt-ts/These'
 import { Associative } from 'hkt-ts/Typeclass/Associative'
@@ -20,6 +20,10 @@ export type SchemaError<E> =
   | SumError<SchemaError<E>>
   | UnexpectedIndexes
   | UnexpectedKeys
+
+export interface SchemaErrorHKT extends HKT {
+  readonly type: SchemaError<this[Params.A]>
+}
 
 export interface Compound<E> {
   readonly errors: ReadonlyArray<E>

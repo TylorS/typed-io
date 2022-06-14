@@ -93,7 +93,9 @@ export const refine =
 
 type ConcatRefinement<T, U> = U extends Branded<any, any>
   ? ValueOf<U> & Brand<BrandOf<T> & BrandOf<U>>
-  : U & Brand<BrandOf<T> & BrandOf<U>>
+  : T extends Branded<any, any>
+  ? U & Brand<BrandOf<T>>
+  : U
 
 export const not =
   <A, B extends A>(refinement: R.Refinement<A, B>) =>
@@ -115,7 +117,7 @@ export const lazy = <A>(f: () => Guard<A>): Guard<A> => {
 export const array = <A>(guard: Guard<A>, constraints?: ArrayConstraints<A>): Guard<readonly A[]> =>
   Guard(Refinements.isArray(guard.is, constraints))
 
-export const tuple = <A extends ReadonlyArray<A>>(
+export const tuple = <A extends ReadonlyArray<any>>(
   guards: {
     readonly [K in keyof A]: Guard<A[K]>
   },

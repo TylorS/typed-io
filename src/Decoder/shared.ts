@@ -1,6 +1,7 @@
 import { pipe } from 'hkt-ts'
 import { Refinement } from 'hkt-ts/Refinement'
 import { Left, Right, These } from 'hkt-ts/These'
+import { DeepEquals } from 'hkt-ts/Typeclass/Eq'
 
 import { Decoder, DecoderHKT } from './Decoder'
 import { named } from './named'
@@ -20,14 +21,14 @@ type SharedError<T extends ReadonlyArray<any>, E = never> = T extends readonly [
 export const decodeSharedConstraints = <
   A,
   E,
-  Additional extends ReadonlyArray<readonly [Refinement<A, any>, (u: A) => SchemaError<any>]>,
+  Additional extends ReadonlyArray<readonly [Refinement<A, any>, (u: A) => SchemaError<any>]> = [],
   Const extends A = never,
   Enum extends ReadonlyArray<A> = never,
   Default extends A = never,
 >(
   base: Refinement<unknown, A>,
   baseError: (u: unknown) => SchemaError<E>,
-  additionalRefinments: Additional,
+  additionalRefinments: Additional = [] as unknown as Additional,
   constraints?: OmitJsonSchemaOnly<SharedConstraints<DecoderHKT, Const, Enum, Default>>,
 ): Decoder<
   unknown,
@@ -57,12 +58,14 @@ export const decodeSharedConstraints = <
     }
 
     if ('const' in constraints) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return constraints.const === u ? Right(u as R) : Left(ConstError.leaf(constraints.const!, u))
+      return DeepEquals.equals(constraints.const, u)
+        ? Right(u as R)
+        : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          Left(ConstError.leaf(constraints.const!, u))
     }
 
     if (constraints.enum !== undefined) {
-      return constraints.enum.includes(u as A)
+      return constraints.enum.some((x) => DeepEquals.equals(x, u))
         ? Right(u as R)
         : Left(EnumError.leaf(constraints.enum, u))
     }
@@ -78,16 +81,18 @@ export const decodeSharedConstraints = <
     decode,
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  if ('default' in constraints!) {
+  if (!constraints) {
+    return decoder
+  }
+
+  if ('default' in constraints) {
     decoder = pipe(
       decoder,
       withFallback(() => constraints.default as R),
     )
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  if ('title' in constraints!) {
+  if ('title' in constraints) {
     decoder = pipe(decoder, named(constraints.title as string))
   }
 

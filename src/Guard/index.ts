@@ -1,5 +1,6 @@
 export * from './defaultInterpreter'
 export * from './Guard'
 export * from './GuardSchema'
+export * from './hkt'
 export * from './Interpreter'
 export * from './interpreters/index'
