@@ -32,6 +32,10 @@ export interface SharedConstraints<
   readonly default?: Default
 }
 
+export type OmitJsonSchemaOnly<T> = {
+  readonly [K in keyof T as K extends `$${string}` ? never : K extends 'examples' ? never : K]: T[K]
+}
+
 export type GetSharedType<Const, Enum, Fallback> = {
   0: Const
   1: {

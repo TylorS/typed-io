@@ -31,6 +31,7 @@
   "dependencies": {
     "@types/json-schema": "^7.0.11",
     "hkt-ts": "^2.0.7",
+    "json-schema-parser": "^0.1.0",
     "ts-toolbelt": "^9.6.0"
   },
   "peerDependencies": {
