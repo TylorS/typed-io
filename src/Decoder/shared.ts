@@ -1,4 +1,5 @@
 import { pipe } from 'hkt-ts'
+import { isNonEmpty } from 'hkt-ts/Array'
 import { Refinement } from 'hkt-ts/Refinement'
 import { Left, Right, These } from 'hkt-ts/These'
 import { DeepEquals } from 'hkt-ts/Typeclass/Eq'
@@ -9,7 +10,7 @@ import { withFallback } from './withFallback'
 
 import { GetSharedType, OmitJsonSchemaOnly, SharedConstraints } from '@/Constraints/shared'
 import { ConstError, EnumError } from '@/SchemaError/BuiltinErrors'
-import { SchemaError } from '@/SchemaError/SchemaError'
+import { SchemaError, makeSchemaErrorAssociative } from '@/SchemaError/SchemaError'
 
 type SharedError<T extends ReadonlyArray<any>, E = never> = T extends readonly [
   readonly [any, (arg: any) => SchemaError<infer Next>],
@@ -47,10 +48,12 @@ export const decodeSharedConstraints = <
       return Left(baseError(u))
     }
 
-    for (const [refinement, refinmentError] of additionalRefinments) {
-      if (!refinement(u as A)) {
-        return Left(refinmentError(u as A))
-      }
+    const errors = additionalRefinments.flatMap(([refinement, refinmentError]) =>
+      !refinement(u as A) ? [refinmentError(u as A)] : [],
+    )
+
+    if (isNonEmpty(errors)) {
+      return Left(errors.reduce(makeSchemaErrorAssociative<any>('Refinements').concat))
     }
 
     if (!constraints) {

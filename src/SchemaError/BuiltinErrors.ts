@@ -134,6 +134,9 @@ export class MinLengthError<A> implements Actual<A>, ToRoseTree {
         )} minimum length of ${minLength} but received a length of ${actualLength}`,
       )
   }
+
+  static leaf = <A>(actual: A, minLength: number, actualLength: number) =>
+    new LeafError(new MinLengthError(actual, minLength, actualLength))
 }
 
 export class MaxLengthError<A> implements Actual<A>, ToRoseTree {
@@ -149,6 +152,9 @@ export class MaxLengthError<A> implements Actual<A>, ToRoseTree {
         )} maximum length of ${maxLength} but received a length of ${actualLength}`,
       )
   }
+
+  static leaf = <A>(actual: A, maxLength: number, actualLength: number) =>
+    new LeafError(new MaxLengthError(actual, maxLength, actualLength))
 }
 
 export class PatternError implements Actual<string>, ToRoseTree {
@@ -159,6 +165,9 @@ export class PatternError implements Actual<string>, ToRoseTree {
   constructor(readonly actual: string, readonly pattern: RegExp) {
     this.toRoseTree = () => RoseTree(`Expected ${actual} to match RegExp pattern ${pattern}.`)
   }
+
+  static leaf = (actual: string, pattern: RegExp) =>
+    new LeafError(new PatternError(actual, pattern))
 }
 
 export class FormatError implements Actual<string>, ToRoseTree {
@@ -169,4 +178,7 @@ export class FormatError implements Actual<string>, ToRoseTree {
   constructor(readonly actual: string, readonly format: StringFormat) {
     this.toRoseTree = () => RoseTree(`Expected ${actual} to match format ${format}.`)
   }
+
+  static leaf = (actual: string, format: StringFormat) =>
+    new LeafError(new FormatError(actual, format))
 }

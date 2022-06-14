@@ -94,49 +94,7 @@ export const isString =
     }
 
     if (constraints.format) {
-      switch (constraints.format) {
-        case 'date':
-          return isDateString(x)
-        case 'date-time':
-          return isDateTime(x)
-        case 'duration':
-          return isDuration(x)
-        case 'email':
-          return isEmail(x)
-        case 'hostname':
-          return isHostname(x)
-        case 'idn-email':
-          return isIdnEmail(x)
-        case 'idn-hostname':
-          return isIdnHostname(x)
-        case 'ipv4':
-          return isIpv4(x)
-        case 'ipv6':
-          return isIpv6(x)
-        case 'json-pointer':
-          return isJsonPointer(x)
-        case 'relative-json-pointer':
-          return isRelativeJsonPointer(x)
-        case 'time':
-          return isTimeString(x)
-        case 'iri-reference':
-        case 'uri-reference':
-          return isUriReference(x)
-        case 'iri':
-        case 'uri':
-          return isUri(x)
-        case 'uuid':
-          return isUuid(x)
-        case 'regex':
-          return isRegexSource(x)
-        default: {
-          console.info(
-            `Unsupported JsonSchema Format ${constraints.format} for @typed/io refinements, returning true optimistically.`,
-            `\n`,
-            `Please feel free to open a pull request if support for this format is important to you, it will be happily accepted.`,
-          )
-        }
-      }
+      return isValidFormat(x, constraints.format)
     }
 
     return true
@@ -197,5 +155,53 @@ export const isRegexSource = (x: string): x is RegexSource => {
     return new RegExp(x), true
   } catch {
     return false
+  }
+}
+
+export const isValidFormat = (x: string, format: StringFormat) => {
+  switch (format) {
+    case 'date':
+      return isDateString(x)
+    case 'date-time':
+      return isDateTime(x)
+    case 'duration':
+      return isDuration(x)
+    case 'email':
+      return isEmail(x)
+    case 'hostname':
+      return isHostname(x)
+    case 'idn-email':
+      return isIdnEmail(x)
+    case 'idn-hostname':
+      return isIdnHostname(x)
+    case 'ipv4':
+      return isIpv4(x)
+    case 'ipv6':
+      return isIpv6(x)
+    case 'json-pointer':
+      return isJsonPointer(x)
+    case 'relative-json-pointer':
+      return isRelativeJsonPointer(x)
+    case 'time':
+      return isTimeString(x)
+    case 'iri-reference':
+    case 'uri-reference':
+      return isUriReference(x)
+    case 'iri':
+    case 'uri':
+      return isUri(x)
+    case 'uuid':
+      return isUuid(x)
+    case 'regex':
+      return isRegexSource(x)
+    default: {
+      console.info(
+        `Unsupported JsonSchema Format ${format} for @typed/io refinements, returning true optimistically.`,
+        `\n`,
+        `Please feel free to open a pull request if support for this format is important to you, it will be happily accepted.`,
+      )
+
+      return true
+    }
   }
 }

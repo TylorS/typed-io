@@ -1,3 +1,5 @@
+import { constVoid } from 'hkt-ts'
+
 import { printSchemaError } from './Debug'
 import {
   CompoundError,
@@ -19,22 +21,22 @@ import {
 } from './SchemaError'
 
 describe.skip(__filename, () => {
-  describe(printSchemaError.name, () => {
-    describe(LeafError.name)
-    describe(CompoundError.name)
-    describe(LazyError.name)
-    describe(MemberError.name)
-    describe(MissingIndexes.name)
-    describe(MissingKeys.name)
-    describe(NamedError.name)
-    describe(NullableError.name)
-    describe(OptionalError.name)
-    describe(OptionalIndex.name)
-    describe(OptionalKey.name)
-    describe(RequiredIndex.name)
-    describe(RequiredKey.name)
-    describe(SumError.name)
-    describe(UnexpectedIndexes.name)
-    describe(UnexpectedKeys.name)
+  describe.skip(printSchemaError.name, () => {
+    describe.skip(LeafError.name, constVoid)
+    describe.skip(CompoundError.name, constVoid)
+    describe.skip(LazyError.name, constVoid)
+    describe.skip(MemberError.name, constVoid)
+    describe.skip(MissingIndexes.name, constVoid)
+    describe.skip(MissingKeys.name, constVoid)
+    describe.skip(NamedError.name, constVoid)
+    describe.skip(NullableError.name, constVoid)
+    describe.skip(OptionalError.name, constVoid)
+    describe.skip(OptionalIndex.name, constVoid)
+    describe.skip(OptionalKey.name, constVoid)
+    describe.skip(RequiredIndex.name, constVoid)
+    describe.skip(RequiredKey.name, constVoid)
+    describe.skip(SumError.name, constVoid)
+    describe.skip(UnexpectedIndexes.name, constVoid)
+    describe.skip(UnexpectedKeys.name, constVoid)
   })
 })
