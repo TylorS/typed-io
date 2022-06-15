@@ -33,30 +33,58 @@ const pluralWithLength = (s: string, length: number, postfix?: string) =>
 
 const sum = A.foldMap(N.IdentitySum)
 
-export const length = <E>(error: SchemaError<E>): number =>
+const recursiveLength: <E>(
+  error: SchemaError<E>,
+  recursive?: (error: SchemaError<E>) => number,
+) => number = <E>(
+  error: SchemaError<E>,
+  recursive: (error: SchemaError<E>) => number = recursiveLength,
+): number =>
   pipe(
     error,
     matchSchemaError({
-      Compound: (e) => pipe(e.errors, sum(length)),
-      Lazy: (e) => length(e.error),
+      Compound: (e) => pipe(e.errors, sum(recursive)),
+      Lazy: (e) => recursive(e.error),
       Leaf: () => 1,
-      Member: (e) => length(e.error),
+      Member: (e) => recursive(e.error),
       MissingIndexes: () => 1,
       MissingKeys: () => 1,
-      Named: (e) => length(e.error),
-      Nullable: (e) => length(e.error),
-      Optional: (e) => length(e.error),
-      OptionalIndex: (e) => length(e.error),
-      OptionalKey: (e) => length(e.error),
-      RequiredIndex: (e) => length(e.error),
-      RequiredKey: (e) => length(e.error),
-      Sum: (e) => length(e.error),
+      Named: (e) => recursive(e.error),
+      Nullable: (e) => recursive(e.error),
+      Optional: (e) => recursive(e.error),
+      OptionalIndex: (e) => recursive(e.error),
+      OptionalKey: (e) => recursive(e.error),
+      RequiredIndex: (e) => recursive(e.error),
+      RequiredKey: (e) => recursive(e.error),
+      Sum: (e) => recursive(e.error),
       UnexpectedIndexes: () => 1,
       UnexpectedKeys: () => 1,
     }),
   )
 
+export const length = <E>(error: SchemaError<E>): number => recursiveLength(error)
+
+const makeMemoizedLength = <E>() => {
+  const memoized = new WeakMap<SchemaError<E>, number>()
+  const memoedLength: (error: SchemaError<E>) => number = (error: SchemaError<E>): number => {
+    if (memoized.has(error)) {
+      return memoized.get(error) as number
+    }
+
+    const l = recursiveLength<E>(error, memoedLength)
+
+    memoized.set(error, l)
+
+    return l
+  }
+
+  return memoedLength
+}
+
 export const makeToRoseTree = <Error>(print: (e: Error) => RoseTree<string>) => {
+  // Use memoization to improve performance of recalculating the number of errors as you go down the tree
+  const length = makeMemoizedLength<Error>()
+
   const toRoseTree = (error: SchemaError<Error>): RoseTree<string> => {
     return pipe(
       error,
