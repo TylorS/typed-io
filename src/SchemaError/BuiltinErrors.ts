@@ -100,23 +100,6 @@ export class MessageError implements ToRoseTree {
   static leaf = (message: string) => new LeafError(new MessageError(message))
 }
 
-export class TagError {
-  static type = 'Tag'
-  readonly type = 'Tag'
-  readonly toTree: () => RoseTree<string>
-
-  constructor(readonly tag: string, readonly members: ReadonlyArray<string>) {
-    this.toTree = () =>
-      RoseTree(
-        `Error(s) found while decoding sum tag ${tag}`,
-        members.map((m) => RoseTree(m)),
-      )
-  }
-
-  static leaf = (tag: string, members: ReadonlyArray<string>) =>
-    new LeafError(new TagError(tag, members))
-}
-
 export class InvalidDateError extends actual(expectedError('ISO8601-formatted Date String'))(
   'InvalidDate',
 ) {}
