@@ -4,7 +4,7 @@ import { Decoder } from './Decoder'
 
 import { makeSchemaErrorFlatMap } from '@/SchemaError/SchemaError'
 
-const flatMap = makeSchemaErrorFlatMap<any>('Decoder.compose')
+const flatMap = makeSchemaErrorFlatMap<any>('')
 
 export const compose =
   <A, E2, O>(right: Decoder<A, E2, O>) =>

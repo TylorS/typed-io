@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { RoseTree } from 'hkt-ts/RoseTree'
 
-import { LeafError } from './SchemaError'
+import { printSchemaError } from './Debug'
+import { LeafError, SchemaError } from './SchemaError'
 
 import { StringFormat } from '@/JsonSchema/JsonSchema'
 
@@ -33,29 +34,47 @@ export const actual =
 const expectedError = (expected: string) => (input: unknown) =>
   RoseTree(`Expected ${expected} but received ${stringify(input)}`)
 
-export class StringError extends actual(expectedError('string'))('String') {}
+export class StringError extends actual(expectedError('string'))('String') {
+  static leaf = (actual: unknown): LeafError<StringError> => super.leaf(actual)
+}
 
-export class NumberError extends actual(expectedError('number'))('Number') {}
+export class NumberError extends actual(expectedError('number'))('Number') {
+  static leaf = (actual: unknown): LeafError<NumberError> => super.leaf(actual)
+}
 
-export class IntegerError extends actual(expectedError('integer'))('Integer') {}
+export class IntegerError extends actual(expectedError('integer'))('Integer') {
+  static leaf = (actual: unknown): LeafError<IntegerError> => super.leaf(actual)
+}
 
 export class NaNError extends actual((_: typeof NaN) =>
   RoseTree(`Expected number but received NaN`),
-)('NaN') {}
+)('NaN') {
+  static leaf = (actual: number): LeafError<NaNError> => super.leaf(actual)
+}
 
 export class NegativeInfinityError extends actual((_: typeof Infinity) =>
   RoseTree(`Expected number but received -Infinity`),
-)('-Infinity') {}
+)('-Infinity') {
+  static leaf = (actual: number): LeafError<NegativeInfinityError> => super.leaf(actual)
+}
 
 export class PositiveInfinityError extends actual((_: typeof Infinity) =>
   RoseTree(`Expected number but received +Infinity`),
-)('+Infinity') {}
+)('+Infinity') {
+  static leaf = (actual: number): LeafError<PositiveInfinityError> => super.leaf(actual)
+}
 
-export class BooleanError extends actual(expectedError('boolean'))('Boolean') {}
+export class BooleanError extends actual(expectedError('boolean'))('Boolean') {
+  static leaf = (actual: unknown): LeafError<BooleanError> => super.leaf(actual)
+}
 
-export class UnknownArrayError extends actual(expectedError('Array'))('UnknownArray') {}
+export class UnknownArrayError extends actual(expectedError('Array'))('UnknownArray') {
+  static leaf = (actual: unknown): LeafError<UnknownArrayError> => super.leaf(actual)
+}
 
-export class UnknownRecordError extends actual(expectedError('Record'))('UnknownRecord') {}
+export class UnknownRecordError extends actual(expectedError('Record'))('UnknownRecord') {
+  static leaf = (actual: unknown): LeafError<UnknownRecordError> => super.leaf(actual)
+}
 
 export class ConstError<E> implements Actual<unknown>, ToRoseTree {
   static type = '@typed/io/Const' as const
@@ -67,7 +86,8 @@ export class ConstError<E> implements Actual<unknown>, ToRoseTree {
       RoseTree(`Expected exactly ${stringify(expected)} but received ${stringify(actual)}`)
   }
 
-  static leaf = <E>(expected: E, actual: unknown) => new LeafError(new ConstError(expected, actual))
+  static leaf = <E>(expected: E, actual: unknown): LeafError<ConstError<E>> =>
+    new LeafError(new ConstError(expected, actual))
 }
 
 export class EnumError<E extends ReadonlyArray<any>> implements Actual<unknown>, ToRoseTree {
@@ -83,8 +103,10 @@ export class EnumError<E extends ReadonlyArray<any>> implements Actual<unknown>,
       )
   }
 
-  static leaf = <E extends ReadonlyArray<any>>(expected: E, actual: unknown) =>
-    new LeafError(new EnumError(expected, actual))
+  static leaf = <E extends ReadonlyArray<any>>(
+    expected: E,
+    actual: unknown,
+  ): LeafError<EnumError<E>> => new LeafError(new EnumError(expected, actual))
 }
 
 export class MessageError implements ToRoseTree {
@@ -97,7 +119,8 @@ export class MessageError implements ToRoseTree {
     this.toRoseTree = () => RoseTree(message)
   }
 
-  static leaf = (message: string) => new LeafError(new MessageError(message))
+  static leaf = (message: string): LeafError<MessageError> =>
+    new LeafError(new MessageError(message))
 }
 
 export class InvalidDateError extends actual(expectedError('ISO8601-formatted Date String'))(
@@ -118,7 +141,11 @@ export class MinLengthError<A> implements Actual<A>, ToRoseTree {
       )
   }
 
-  static leaf = <A>(actual: A, minLength: number, actualLength: number) =>
+  static leaf = <A>(
+    actual: A,
+    minLength: number,
+    actualLength: number,
+  ): LeafError<MinLengthError<A>> =>
     new LeafError(new MinLengthError(actual, minLength, actualLength))
 }
 
@@ -136,7 +163,11 @@ export class MaxLengthError<A> implements Actual<A>, ToRoseTree {
       )
   }
 
-  static leaf = <A>(actual: A, maxLength: number, actualLength: number) =>
+  static leaf = <A>(
+    actual: A,
+    maxLength: number,
+    actualLength: number,
+  ): LeafError<MaxLengthError<A>> =>
     new LeafError(new MaxLengthError(actual, maxLength, actualLength))
 }
 
@@ -149,7 +180,7 @@ export class PatternError implements Actual<string>, ToRoseTree {
     this.toRoseTree = () => RoseTree(`Expected ${actual} to match RegExp pattern ${pattern}.`)
   }
 
-  static leaf = (actual: string, pattern: RegExp) =>
+  static leaf = (actual: string, pattern: RegExp): LeafError<PatternError> =>
     new LeafError(new PatternError(actual, pattern))
 }
 
@@ -162,6 +193,78 @@ export class FormatError implements Actual<string>, ToRoseTree {
     this.toRoseTree = () => RoseTree(`Expected ${actual} to match format ${format}.`)
   }
 
-  static leaf = (actual: string, format: StringFormat) =>
+  static leaf = (actual: string, format: StringFormat): LeafError<FormatError> =>
     new LeafError(new FormatError(actual, format))
+}
+
+export class MinPropertiesError<A> implements Actual<A>, ToRoseTree {
+  static type = '@typed/io/MinProperties' as const
+  readonly type = MinPropertiesError.type
+  readonly toRoseTree: () => RoseTree<string>
+
+  constructor(
+    readonly actual: A,
+    readonly minProperties: number,
+    readonly actualPropertyCount: number,
+  ) {
+    this.toRoseTree = () =>
+      RoseTree(
+        `Expected ${stringify(
+          actual,
+        )} minimum of ${minProperties} properties but found ${actualPropertyCount}`,
+      )
+  }
+
+  static leaf = <A>(
+    actual: A,
+    minProperties: number,
+    actualPropertyCount: number,
+  ): LeafError<MinPropertiesError<A>> =>
+    new LeafError(new MinPropertiesError(actual, minProperties, actualPropertyCount))
+}
+
+export class MaxPropertiesError<A> implements Actual<A>, ToRoseTree {
+  static type = '@typed/io/MaxProperties' as const
+  readonly type = MaxPropertiesError.type
+  readonly toRoseTree: () => RoseTree<string>
+
+  constructor(
+    readonly actual: A,
+    readonly maxProperties: number,
+    readonly actualPropertyCount: number,
+  ) {
+    this.toRoseTree = () =>
+      RoseTree(
+        `Expected ${stringify(
+          actual,
+        )} maximum of ${maxProperties} properties but found ${actualPropertyCount}`,
+      )
+  }
+
+  static leaf = <A>(
+    actual: A,
+    maxProperties: number,
+    actualPropertyCount: number,
+  ): LeafError<MaxPropertiesError<A>> =>
+    new LeafError(new MaxPropertiesError(actual, maxProperties, actualPropertyCount))
+}
+
+export class PatternPropertiesError<A, E extends ToRoseTree> implements Actual<A>, ToRoseTree {
+  static type = '@typed/io/PatternProperties' as const
+  readonly type = PatternPropertiesError.type
+  readonly toRoseTree: () => RoseTree<string>
+
+  constructor(readonly actual: A, readonly pattern: string, readonly error: SchemaError<E>) {
+    this.toRoseTree = () =>
+      RoseTree(`Expected ${stringify(actual)} schema to match schema defined by ${pattern}`, [
+        RoseTree(printSchemaError(error)),
+      ])
+  }
+
+  static leaf = <A, E extends ToRoseTree>(
+    actual: A,
+    pattern: string,
+    error: SchemaError<E>,
+  ): LeafError<PatternPropertiesError<A, E>> =>
+    new LeafError(new PatternPropertiesError(actual, pattern, error))
 }

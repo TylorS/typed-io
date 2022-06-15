@@ -5,7 +5,7 @@ import { drawForest, drawTree } from 'hkt-ts/Tree'
 import * as D from 'hkt-ts/Typeclass/Debug'
 import * as N from 'hkt-ts/number'
 
-import { ToRoseTree } from './BuiltinErrors'
+import type { ToRoseTree } from './BuiltinErrors'
 import {
   CompoundError,
   LazyError,

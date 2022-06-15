@@ -5,7 +5,7 @@ import { Decoder } from './Decoder'
 
 import { SchemaError, makeSchemaErrorFlatMap } from '@/SchemaError/SchemaError'
 
-const flatMapError = makeSchemaErrorFlatMap<any>('flatMap')
+const flatMapError = makeSchemaErrorFlatMap<any>('')
 
 export const flatMap =
   <A, I2, E2, B>(f: (a: A) => Decoder<I2, E2, B>) =>

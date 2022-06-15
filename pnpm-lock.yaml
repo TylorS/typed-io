@@ -21,7 +21,7 @@ specifiers:
   eslint-plugin-prettier: ^4.0.0
   fast-check: ^3.0.0
   fast-glob: ^3.2.11
-  hkt-ts: ^2.0.8
+  hkt-ts: ^2.0.9
   husky: ^8.0.1
   json-schema-parser: ^0.1.0
   lint-staged: ^12.5.0
@@ -38,7 +38,7 @@ specifiers:
 
 dependencies:
   '@types/json-schema': 7.0.11
-  hkt-ts: 2.0.8_tslib@2.4.0
+  hkt-ts: 2.0.9_tslib@2.4.0
   json-schema-parser: 0.1.0
   ts-toolbelt: 9.6.0
 
@@ -1538,8 +1538,8 @@ packages:
     hasBin: true
     dev: true
 
-  /hkt-ts/2.0.8_tslib@2.4.0:
-    resolution: {integrity: sha512-swUbcX1pqzBiPBszjzYyrixoY7Kv7E1jRHXAicFYWv7Q2YitkuUXjOCFrMOhc/0Adk46FBbJqAKmfsTSkLnZeg==}
+  /hkt-ts/2.0.9_tslib@2.4.0:
+    resolution: {integrity: sha512-bq3t9rPKmZ1qCFH3NcqM2YIvuvG3q0o1hPu2EP7dBBCRzEkXAg0OXag2OmrEe1tw7kTxrZoo1lseYEWubwgmwQ==}
     peerDependencies:
       tslib: ^2.4.0
     dependencies:
