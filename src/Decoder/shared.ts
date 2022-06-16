@@ -8,7 +8,12 @@ import { Decoder, DecoderHKT } from './Decoder'
 import { named } from './named'
 import { withFallback } from './withFallback'
 
-import { GetSharedType, OmitJsonSchemaOnly, SharedConstraints } from '@/Constraints/shared'
+import {
+  GetSharedError,
+  GetSharedType,
+  OmitJsonSchemaOnly,
+  SharedConstraints,
+} from '@/Constraints/shared'
 import { ConstError, EnumError } from '@/SchemaError/BuiltinErrors'
 import { SchemaError, makeSchemaErrorAssociative } from '@/SchemaError/SchemaError'
 
@@ -33,7 +38,7 @@ export const decodeSharedConstraints = <
   constraints?: OmitJsonSchemaOnly<SharedConstraints<DecoderHKT, Const, Enum, Default>>,
 ): Decoder<
   unknown,
-  E | SharedError<Additional> | ConstError<Const> | EnumError<Enum>,
+  GetSharedError<E, Const, Enum> | SharedError<Additional>,
   GetSharedType<Const, Enum, A | Default>
 > => {
   type R = GetSharedType<Const, Enum, A | Default>
@@ -41,7 +46,7 @@ export const decodeSharedConstraints = <
   const decode = (
     u: unknown,
   ): These<
-    SchemaError<E | SharedError<Additional> | ConstError<Const> | EnumError<Enum>>,
+    SchemaError<E | SharedError<Additional> | GetSharedError<E, Const, Enum>>,
     GetSharedType<Const, Enum, A | Default>
   > => {
     if (!base(u)) {
@@ -64,13 +69,13 @@ export const decodeSharedConstraints = <
       return DeepEquals.equals(constraints.const, u)
         ? Right(u as R)
         : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          Left(ConstError.leaf(constraints.const!, u))
+          Left(ConstError.leaf(constraints.const!, u) as any)
     }
 
     if (constraints.enum !== undefined) {
       return constraints.enum.some((x) => DeepEquals.equals(x, u))
         ? Right(u as R)
-        : Left(EnumError.leaf(constraints.enum, u))
+        : Left(EnumError.leaf(constraints.enum, u) as any)
     }
 
     return Right(u as R)
@@ -78,7 +83,7 @@ export const decodeSharedConstraints = <
 
   let decoder: Decoder<
     unknown,
-    E | SharedError<Additional> | ConstError<Const> | EnumError<Enum>,
+    SharedError<Additional> | GetSharedError<E, Const, Enum>,
     GetSharedType<Const, Enum, A | Default>
   > = {
     decode,

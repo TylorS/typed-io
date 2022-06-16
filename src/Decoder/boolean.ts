@@ -3,8 +3,13 @@ import { isBoolean } from 'hkt-ts/boolean'
 import { Decoder, DecoderHKT } from './Decoder'
 import { decodeSharedConstraints } from './shared'
 
-import { GetSharedType, OmitJsonSchemaOnly, SharedConstraints } from '@/Constraints/shared'
-import { BooleanError, ConstError, EnumError } from '@/SchemaError/BuiltinErrors'
+import {
+  GetSharedError,
+  GetSharedType,
+  OmitJsonSchemaOnly,
+  SharedConstraints,
+} from '@/Constraints/shared'
+import { BooleanError } from '@/SchemaError/BuiltinErrors'
 
 export interface BooleanConstraints<
   Const extends boolean = never,
@@ -20,6 +25,6 @@ export const boolean = <
   constraints?: BooleanConstraints<Const, Enum, Default>,
 ): Decoder<
   unknown,
-  BooleanError | ConstError<Const> | EnumError<Enum>,
+  GetSharedError<BooleanError, Const, Enum>,
   GetSharedType<Const, Enum, boolean | Default>
 > => decodeSharedConstraints(isBoolean, BooleanError.leaf, [], constraints)

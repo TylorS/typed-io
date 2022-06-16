@@ -42,7 +42,10 @@ export class NumberError extends actual(expectedError('number'))('Number') {
   static leaf = (actual: unknown): LeafError<NumberError> => super.leaf(actual)
 }
 
-export class IntegerError extends actual(expectedError('integer'))('Integer') {
+export class IntegerError
+  extends actual(expectedError('integer'))('Integer')
+  implements ToRoseTree
+{
   static leaf = (actual: unknown): LeafError<IntegerError> => super.leaf(actual)
 }
 

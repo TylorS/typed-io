@@ -1,4 +1,4 @@
-import { constTrue, pipe } from 'hkt-ts'
+import { Constrain, Params, Variance, constTrue, pipe } from 'hkt-ts'
 import * as A from 'hkt-ts/Array'
 import { Left, Right } from 'hkt-ts/Either'
 import { ReadonlyRecord } from 'hkt-ts/Record'
@@ -29,15 +29,23 @@ import {
 } from '@/SchemaError/SchemaError'
 import { isUnknownRecord } from '@/refinements/record'
 
-export interface RecordConstraints<K extends string, A>
-  extends OmitJsonSchemaOnly<RC.RecordConstraints<D.DecoderHKT, K, A>> {}
+export interface RecordConstraints<E, K extends string, A>
+  extends OmitJsonSchemaOnly<
+    RC.RecordConstraints<Constrain<D.DecoderHKT, Params.E, Variance.Invariant<E>>, K, A>
+  > {}
 
-export const record = <E extends ToRoseTree, A, K extends string = string>(
+export const record = <
+  E extends ToRoseTree,
+  A,
+  E2 extends ToRoseTree = never,
+  K extends string = string,
+>(
   codomain: D.Decoder<unknown, E, A>,
-  constraints?: RecordConstraints<K, A>,
+  constraints?: RecordConstraints<E2, K, A>,
 ): D.Decoder<
   unknown,
   | E
+  | E2
   | UnknownRecordError
   | ConstError<ReadonlyRecord<K, A>>
   | EnumError<ReadonlyArray<ReadonlyRecord<K, A>>>
@@ -148,7 +156,7 @@ export const record = <E extends ToRoseTree, A, K extends string = string>(
           | E
           | MinPropertiesError<ReadonlyRecord<string, unknown>>
           | MaxPropertiesError<ReadonlyRecord<string, unknown>>
-          | PatternPropertiesError<unknown, E>
+          | PatternPropertiesError<unknown, E2>
         >,
         ReadonlyRecord<K, A>
       >[] = existingKeys.map((k) =>
@@ -178,7 +186,7 @@ export const record = <E extends ToRoseTree, A, K extends string = string>(
                 return []
               }
 
-              const result = decoder.decode(value) as These.These<SchemaError<E>, A>
+              const result = decoder.decode(value)
 
               if (These.isLeft(result)) {
                 fatal = true

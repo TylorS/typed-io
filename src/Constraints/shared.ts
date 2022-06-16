@@ -2,8 +2,9 @@ import { DefaultOf, HKT, Kind_, LengthOf, Params } from 'hkt-ts'
 import { Json } from 'hkt-ts/Json'
 import { ReadonlyRecord } from 'hkt-ts/Record'
 import * as JS from 'json-schema'
-import { Cast } from 'ts-toolbelt/out/Any/Cast'
 import { Equals } from 'ts-toolbelt/out/Any/Equals'
+
+import { ConstError, EnumError } from '@/SchemaError/BuiltinErrors'
 
 /**
  * A shared set of constraints for all types as defined by JSON-Schema. Utilizes HKT abstraction from
@@ -44,6 +45,17 @@ export type GetSharedType<Const, Enum, Fallback> = {
   }[Equals<never, Enum>]
 }[Equals<never, Const>]
 
+export type GetSharedError<E, Const, Enum extends ReadonlyArray<any>> =
+  | E
+  | {
+      0: ConstError<Const>
+      1: never
+    }[Equals<never, Const>]
+  | {
+      0: EnumError<Enum>
+      1: never
+    }[Equals<never, Enum>]
+
 export type PossibleParamsOf<T extends HKT> = {
   1: [Params.A]
   2: [Params.E, Params.A]
@@ -68,9 +80,11 @@ export type PossibleParamsOf<T extends HKT> = {
   ]
 }[LengthOf<T>]
 
-export type DefaultsOf<T extends HKT> = PossibleParamsOf<T> extends infer R
-  ? Cast<
-      { readonly [K in keyof R]: R[K] extends Params ? DefaultOf<T, R[K]> : never },
-      readonly any[]
-    >
+export type DefaultsOf<T extends HKT> = PossibleParamsOf<T> extends readonly [...infer R]
+  ? { readonly [K in keyof R]: R[K] extends Params ? DefaultOf<T, R[K]> : never }
   : never
+
+export type ConstrainA<T extends HKT, A> = Kind_<
+  [T],
+  DefaultsOf<T> extends readonly [...infer Init, any] ? readonly [...Init, A] : readonly [A]
+>

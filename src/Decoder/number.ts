@@ -4,10 +4,8 @@ import { Decoder, DecoderHKT } from './Decoder'
 import { decodeSharedConstraints } from './shared'
 
 import * as NC from '@/Constraints/number'
-import { GetSharedType, OmitJsonSchemaOnly } from '@/Constraints/shared'
+import { GetSharedError, GetSharedType, OmitJsonSchemaOnly } from '@/Constraints/shared'
 import {
-  ConstError,
-  EnumError,
   NaNError,
   NegativeInfinityError,
   NumberError,
@@ -28,12 +26,11 @@ export const number = <
   constraints?: NumberConstraints<Const, Enum, Default>,
 ): Decoder<
   unknown,
-  | NumberError
-  | PositiveInfinityError
-  | NegativeInfinityError
-  | NaNError
-  | ConstError<Const>
-  | EnumError<Enum>,
+  GetSharedError<
+    NumberError | PositiveInfinityError | NegativeInfinityError | NaNError,
+    Const,
+    Enum
+  >,
   GetSharedType<Const, Enum, number | Default>
 > =>
   decodeSharedConstraints(

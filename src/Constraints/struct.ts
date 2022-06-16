@@ -3,51 +3,32 @@ import { NonEmptyArray } from 'hkt-ts/NonEmptyArray'
 import { ReadonlyRecord } from 'hkt-ts/Record'
 import { Equals } from 'ts-toolbelt/out/Any/Equals'
 
-import { DefaultsOf, SharedConstraints } from './shared'
+import { ConstrainA, DefaultsOf, SharedConstraints } from './shared'
 
 import { Property } from '@/Schema'
 
 export interface StructConstraints<
   T extends HKT,
-  A extends ReadonlyRecord<
-    string,
-    Property<
-      Kind_<[T], DefaultsOf<T> extends readonly [...infer Init, any] ? [...Init, any] : [any]>,
-      boolean
-    >
-  >,
-  K extends string = keyof A & string,
-  B = never,
-> extends SharedConstraints<T, BuildStruct<T, A> & StructAdditionalProperties<B>> {
-  readonly patternProperties?: ReadonlyRecord<
-    string,
-    Kind_<[T], DefaultsOf<T> extends readonly [...infer Init, any] ? [...Init, string] : [string]>
-  >
-  readonly propertyNames?:
-    | Kind_<[T], DefaultsOf<T> extends readonly [...infer Init, any] ? [...Init, K] : [K]>
-    | undefined
-  readonly additionalProperties?:
-    | Kind_<[T], DefaultsOf<T> extends readonly [...infer Init, any] ? [...Init, B] : [B]>
-    | undefined
-  readonly dependencies?: ReadonlyRecord<
-    K,
-    | Kind_<
-        [T],
-        DefaultsOf<T> extends readonly [...infer Init, any]
-          ? [...Init, BuildStruct<T, A>[keyof BuildStruct<T, A>]]
-          : [BuildStruct<T, A>[keyof BuildStruct<T, A>]]
-      >
-    | NonEmptyArray<K>
-  >
-  readonly default?: BuildStruct<T, A> & StructAdditionalProperties<B>
+  Properties extends ReadonlyRecord<string, Property<Kind_<[T], DefaultsOf<T>>, boolean>>,
+  Additional extends Kind_<[T], DefaultsOf<T>> = never,
+  PatternProperties extends ReadonlyRecord<string, ConstrainA<T, string>> = never,
+  Dependencies extends ReadonlyRecord<
+    keyof Properties & string,
+    | ConstrainA<T, BuildStruct<T, Properties>[keyof BuildStruct<T, Properties>]>
+    | NonEmptyArray<keyof Properties & string>
+  > = never,
+> extends SharedConstraints<
+    T,
+    BuildStruct<T, Properties> & StructAdditionalProperties<Additional>
+  > {
+  readonly patternProperties?: PatternProperties
+  readonly dependencies?: Dependencies
+  readonly default?: BuildStruct<T, Properties> & StructAdditionalProperties<Additional>
 }
 
 export type BuildStruct<
   T extends HKT,
-  A extends ReadonlyRecord<
-    string,
-    Property<Kind_<[T], [any, any, any, any, any, any, any, any, any, any]>, boolean>
-  >,
+  A extends ReadonlyRecord<string, Property<Kind_<[T], DefaultsOf<T>>, boolean>>,
 > = [
   {
     readonly [K in keyof A as A[K]['isOptional'] extends true ? K : never]?: ParamOf<
