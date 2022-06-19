@@ -11,7 +11,7 @@ import { ToRoseTree } from '@/SchemaError/BuiltinErrors'
 export const refine =
   <A, B extends A>(
     refinement: Refinement<A, B>,
-    refinementName: string = refinement.name || 'refinement',
+    refinementName: string = refinement.name || 'UnknownRefinement',
   ) =>
   <I, E>(decoder: Decoder<I, E, A>): Decoder<I, E | RefineError<A, B>, B> =>
     pipe(

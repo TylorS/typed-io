@@ -31,24 +31,23 @@ export const decodeSharedConstraints = <
   Const extends A = never,
   Enum extends ReadonlyArray<A> = never,
   Default extends A = never,
+  E2 = never,
+  B extends A = A,
 >(
   base: Refinement<unknown, A>,
   baseError: (u: unknown) => SchemaError<E>,
   additionalRefinments: Additional = [] as unknown as Additional,
   constraints?: OmitJsonSchemaOnly<SharedConstraints<DecoderHKT, Const, Enum, Default>>,
+  flatMap?: (a: A) => These<SchemaError<E2>, B>,
 ): Decoder<
   unknown,
-  GetSharedError<E, Const, Enum> | SharedError<Additional>,
-  GetSharedType<Const, Enum, A | Default>
+  GetSharedError<E, Const, Enum> | SharedError<Additional> | E2,
+  GetSharedType<Const, Enum, B | Default>
 > => {
-  type R = GetSharedType<Const, Enum, A | Default>
+  type _Err = GetSharedError<E, Const, Enum> | SharedError<Additional> | E2
+  type _R = GetSharedType<Const, Enum, B | Default>
 
-  const decode = (
-    u: unknown,
-  ): These<
-    SchemaError<E | SharedError<Additional> | GetSharedError<E, Const, Enum>>,
-    GetSharedType<Const, Enum, A | Default>
-  > => {
+  const decode = (u: unknown): These<SchemaError<_Err>, _R> => {
     if (!base(u)) {
       return Left(baseError(u))
     }
@@ -58,34 +57,34 @@ export const decodeSharedConstraints = <
     )
 
     if (isNonEmpty(errors)) {
-      return Left(errors.reduce(makeSchemaErrorAssociative<any>('Refinements').concat))
+      return Left(errors.reduce(makeSchemaErrorAssociative<any>('').concat))
     }
 
     if (!constraints) {
-      return Right(u as R)
+      return Right(u as _R)
     }
 
     if ('const' in constraints) {
       return DeepEquals.equals(constraints.const, u)
-        ? Right(u as R)
+        ? Right(u as _R)
         : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          Left(ConstError.leaf(constraints.const!, u) as any)
+          (Left(ConstError.leaf(constraints.const!, u)) as any)
     }
 
     if (constraints.enum !== undefined) {
       return constraints.enum.some((x) => DeepEquals.equals(x, u))
-        ? Right(u as R)
-        : Left(EnumError.leaf(constraints.enum, u) as any)
+        ? Right(u as _R)
+        : (Left(EnumError.leaf(constraints.enum, u)) as any)
     }
 
-    return Right(u as R)
+    if (flatMap) {
+      return flatMap(u as A) as These<SchemaError<_Err>, _R>
+    }
+
+    return Right(u as _R)
   }
 
-  let decoder: Decoder<
-    unknown,
-    SharedError<Additional> | GetSharedError<E, Const, Enum>,
-    GetSharedType<Const, Enum, A | Default>
-  > = {
+  let decoder: Decoder<unknown, _Err, _R> = {
     decode,
   }
 
@@ -96,7 +95,7 @@ export const decodeSharedConstraints = <
   if ('default' in constraints) {
     decoder = pipe(
       decoder,
-      withFallback(() => constraints.default as R),
+      withFallback(() => constraints.default as _R),
     )
   }
 

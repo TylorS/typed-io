@@ -27,8 +27,9 @@ import {
   matchSchemaError,
 } from './SchemaError'
 
-const plural = (s: string, n: number, postfix = 's') => (n === 1 ? s : `${s}${postfix}`)
-const pluralWithLength = (s: string, length: number, postfix?: string) =>
+export const plural = (s: string, n: number, postfix = 's') => (n === 1 ? s : `${s}${postfix}`)
+
+export const pluralWithLength = (s: string, length: number, postfix?: string) =>
   `${length} ${plural(s, length, postfix)}`
 
 const sum = A.foldMap(N.IdentitySum)
@@ -111,7 +112,7 @@ export const makeToRoseTree = <Error>(print: (e: Error) => RoseTree<string>) => 
             `Missing ${plural('Index', error.errors.length, 'es')} at ${error.errors.join(', ')}`,
           ),
         MissingKeys: (error: MissingKeys) =>
-          RoseTree(`Missing  ${plural('Key', error.errors.length)} at ${error.errors.join(', ')}`),
+          RoseTree(`Missing ${plural('Key', error.errors.length)} at ${error.errors.join(', ')}`),
         Named: (error: NamedError<string, SchemaError<Error>>) =>
           RoseTree(error.name, [toRoseTree(error.error)]),
         Nullable: (error: NullableError<SchemaError<Error>>) =>
