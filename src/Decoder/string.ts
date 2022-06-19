@@ -6,11 +6,9 @@ import { isString } from 'hkt-ts/string'
 import { Decoder, DecoderHKT } from './Decoder'
 import { decodeSharedConstraints } from './shared'
 
-import { OmitJsonSchemaOnly } from '@/Constraints/shared'
+import { GetSharedError, OmitJsonSchemaOnly } from '@/Constraints/shared'
 import * as SC from '@/Constraints/string'
 import {
-  ConstError,
-  EnumError,
   FormatError,
   MaxLengthError,
   MinLengthError,
@@ -30,9 +28,7 @@ export type StringErrors<
   Const extends string = never,
   Enum extends ReadonlyArray<string> = never,
 > =
-  | StringError
-  | ConstError<Const>
-  | EnumError<Enum>
+  | GetSharedError<StringError, Const, Enum>
   | MinLengthError<string>
   | MaxLengthError<string>
   | PatternError
