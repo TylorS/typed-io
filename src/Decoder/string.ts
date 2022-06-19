@@ -68,8 +68,8 @@ export const string = <
     const errors: ReadonlyArray<
       SchemaError<MinLengthError<string> | MaxLengthError<string> | PatternError | FormatError>
     > = [
-      length >= minLength ? [] : [MinLengthError.leaf(s, minLength, length)],
-      length <= maxLength ? [] : [MaxLengthError.leaf(s, maxLength, length)],
+      length < minLength ? [MinLengthError.leaf(s, minLength, length)] : [],
+      length > maxLength ? [MaxLengthError.leaf(s, maxLength, length)] : [],
       pattern && !pattern.test(s) ? [PatternError.leaf(s, pattern)] : [],
       format && !isValidFormat(s, format) ? [FormatError.leaf(s, format)] : [],
     ].flat()
