@@ -1,7 +1,0 @@
-export * as At from './At'
-export * as Indexed from './Indexed'
-export * as Iso from './Iso'
-export * as Lens from './Lens'
-export * as Optional from './Optional'
-export * as Prism from './Prism'
-export * as Traversal from './Traversal'
