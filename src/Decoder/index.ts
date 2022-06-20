@@ -1,3 +1,4 @@
+export * from './array'
 export * from './boolean'
 export * from './compose'
 export * from './Decoder'

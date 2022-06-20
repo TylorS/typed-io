@@ -271,3 +271,56 @@ export class PatternPropertiesError<A, E extends ToRoseTree> implements Actual<A
   ): LeafError<PatternPropertiesError<A, E>> =>
     new LeafError(new PatternPropertiesError(actual, pattern, error))
 }
+
+export class MinContainsError<A> implements Actual<A>, ToRoseTree {
+  static type = '@typed/io/MinContains' as const
+  readonly type = MinContainsError.type
+  readonly toRoseTree: () => RoseTree<string>
+
+  constructor(readonly actual: A, readonly minContains: number, readonly actualContains: number) {
+    this.toRoseTree = () =>
+      RoseTree(
+        `Expected ${stringify(actual)} minimum of ${minContains} items but found ${actualContains}`,
+      )
+  }
+
+  static leaf = <A>(
+    actual: A,
+    minContains: number,
+    actualContains: number,
+  ): LeafError<MinContainsError<A>> =>
+    new LeafError(new MinContainsError(actual, minContains, actualContains))
+}
+
+export class MaxContainsError<A> implements Actual<A>, ToRoseTree {
+  static type = '@typed/io/MaxContains' as const
+  readonly type = MaxContainsError.type
+  readonly toRoseTree: () => RoseTree<string>
+
+  constructor(readonly actual: A, readonly maxContains: number, readonly actualContains: number) {
+    this.toRoseTree = () =>
+      RoseTree(
+        `Expected ${stringify(actual)} maximum of ${maxContains} items but found ${actualContains}`,
+      )
+  }
+
+  static leaf = <A>(
+    actual: A,
+    maxContains: number,
+    actualContains: number,
+  ): LeafError<MaxContainsError<A>> =>
+    new LeafError(new MaxContainsError(actual, maxContains, actualContains))
+}
+
+export class UniqueItemsError<A> implements Actual<A>, ToRoseTree {
+  static type = '@typed/io/UniqueItems' as const
+  readonly type = UniqueItemsError.type
+  readonly toRoseTree: () => RoseTree<string>
+
+  constructor(readonly actual: A) {
+    this.toRoseTree = () => RoseTree(`Expected unique items but found duplicate values`)
+  }
+
+  static leaf = <A>(actual: A): LeafError<UniqueItemsError<A>> =>
+    new LeafError(new UniqueItemsError(actual))
+}
