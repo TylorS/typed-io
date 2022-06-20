@@ -1,5 +1,5 @@
 import { ValueOf } from 'hkt-ts/Branded'
-import { NonEmptyArray } from 'hkt-ts/NonEmptyArray'
+import { NonEmptyArray, isNonEmpty } from 'hkt-ts/NonEmptyArray'
 import { Integer } from 'hkt-ts/number'
 import { Cast } from 'ts-toolbelt/out/Any/Cast'
 
@@ -61,7 +61,7 @@ export function fromJsonSchema<S extends JsonSchema<any> | ValueOf<JsonSchema<an
 
   switch (schema.type) {
     case 'array': {
-      if (schema.items instanceof Array) {
+      if (schema.items instanceof Array && isNonEmpty(schema.items)) {
         return tuple(
           schema.items.map(fromJsonSchema) as unknown as NonEmptyArray<AnyDecoder>,
           schema as any,
@@ -206,4 +206,44 @@ export type ErrorsFromJsonSchemaObject<T extends ObjectBaseSchema> = T extends {
             ? DependencyError<FromJsonSchema<T>, ErrorsFromJsonSchema<Dependencies[K]>>
             : DependencyError<FromJsonSchema<T>, never>
         }[keyof Dependencies]
+  : T extends {
+      readonly properties: infer Props
+      readonly additionalProperties: infer Additional
+      readonly patternProperties: infer PatternProperties
+    }
+  ?
+      | UnknownRecordError
+      | ErrorsFromJsonSchema<Additional>
+      | {
+          [K in keyof Props]: ErrorsFromJsonSchema<Props[K]>
+        }[keyof Props]
+      | {
+          [K in keyof PatternProperties]: ErrorsFromJsonSchema<
+            PatternProperties[K]
+          > extends ToRoseTree
+            ? PatternPropertiesError<FromJsonSchema<T>, ErrorsFromJsonSchema<PatternProperties[K]>>
+            : PatternPropertiesError<FromJsonSchema<T>, never>
+        }[keyof PatternProperties]
+  : T extends {
+      readonly properties: infer Props
+      readonly additionalProperties: infer Additional
+    }
+  ?
+      | UnknownRecordError
+      | ErrorsFromJsonSchema<Additional>
+      | {
+          [K in keyof Props]: ErrorsFromJsonSchema<Props[K]>
+        }[keyof Props]
+  : T extends {
+      readonly properties: infer Props
+    }
+  ?
+      | UnknownRecordError
+      | {
+          [K in keyof Props]: ErrorsFromJsonSchema<Props[K]>
+        }[keyof Props]
+  : T extends {
+      readonly additionalProperties: infer Additional
+    }
+  ? UnknownRecordError | ErrorsFromJsonSchema<Additional>
   : never
