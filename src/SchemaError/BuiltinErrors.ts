@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { RoseTree } from 'hkt-ts/RoseTree'
 
-import { printSchemaError } from './Debug'
+import { printSchemaError, toRoseTree } from './Debug'
 import { LeafError, SchemaError } from './SchemaError'
 
 import { StringFormat } from '@/JsonSchema/JsonSchema'
@@ -323,4 +323,21 @@ export class UniqueItemsError<A> implements Actual<A>, ToRoseTree {
 
   static leaf = <A>(actual: A): LeafError<UniqueItemsError<A>> =>
     new LeafError(new UniqueItemsError(actual))
+}
+
+export class DependencyError<A, E extends ToRoseTree> implements Actual<A>, ToRoseTree {
+  static type = '@typed/io/Dependency' as const
+  readonly type = DependencyError.type
+  readonly toRoseTree: () => RoseTree<string>
+
+  constructor(readonly actual: A, readonly key: string, readonly error: SchemaError<E>) {
+    this.toRoseTree = () =>
+      RoseTree(`Dependency for key "${key}" failed to validate`, [toRoseTree(error)])
+  }
+
+  static leaf = <A, E extends ToRoseTree>(
+    actual: A,
+    key: string,
+    error: SchemaError<E>,
+  ): LeafError<DependencyError<A, E>> => new LeafError(new DependencyError(actual, key, error))
 }

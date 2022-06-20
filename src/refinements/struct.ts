@@ -2,12 +2,16 @@ import { ReadonlyRecord } from 'hkt-ts/Record'
 
 import { isUnknownRecord } from './record'
 
+import { Guard } from '@/Guard/Guard'
 import { BuildStruct, StructAdditionalProperties, StructConstraints } from '@/JsonSchema/JsonSchema'
 import { Property } from '@/Schema'
-import { Guard } from '@/Guard/Guard'
 
 export const isStruct =
-  <A extends ReadonlyRecord<string, Property<Guard<any>, boolean>>, K extends keyof A & string, B = never>(
+  <
+    A extends ReadonlyRecord<string, Property<Guard<any>, boolean>>,
+    K extends keyof A & string,
+    B = never,
+  >(
     structure: A,
     constraints?: StructConstraints<A, K, B>,
   ) =>
@@ -23,8 +27,16 @@ export const isStruct =
         continue
       }
 
-      prop.value.
+      if (!(key in u) || !prop.value.is(u[key])) {
+        return false
+      }
     }
+
+    if (!constraints) {
+      return true
+    }
+
+    const { patternProperties, dependencies } = constraints
 
     return true
   }

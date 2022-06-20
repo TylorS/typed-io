@@ -22,6 +22,16 @@ export abstract class Schema<
   }
 }
 
+export type CapabilitiesOf<T extends AnySchema> = ReturnType<
+  T['__NOT_AVAILABLE_AT_RUNTIME__']['_Capabilities']
+>
+
+export type ApiOf<T extends AnySchema> = ReturnType<T['__NOT_AVAILABLE_AT_RUNTIME__']['_Api']>
+
+export type AnnotationsOf<T extends AnySchema> = ReturnType<
+  T['__NOT_AVAILABLE_AT_RUNTIME__']['_Annotations']
+>
+
 /**
  * Helper for constructing functions/classes which depend on any Schema type.
  */

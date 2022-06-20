@@ -194,6 +194,6 @@ export const makeDebugArray = <Error>(
   return D.Debug(flow(A.map(makeToRoseTree(print)), drawForest))
 }
 
-export const toRoseTree = (e: ToRoseTree) => e.toRoseTree()
-export const { debug: printSchemaError } = makeDebug(toRoseTree)
-export const { debug: printSchemaErrors } = makeDebugArray(toRoseTree)
+export const toRoseTree = makeToRoseTree((e: ToRoseTree) => e.toRoseTree())
+export const { debug: printSchemaError } = makeDebug((e: ToRoseTree) => e.toRoseTree())
+export const { debug: printSchemaErrors } = makeDebugArray((e: ToRoseTree) => e.toRoseTree())
