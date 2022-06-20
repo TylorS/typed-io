@@ -5,7 +5,7 @@ import { Cast } from 'ts-toolbelt/out/Any/Cast'
 
 import { AnyDecoder, Decoder } from './Decoder'
 import { ArrayErrors, array } from './array'
-import { boolean } from './boolean'
+import { BooleanErrors, boolean } from './boolean'
 import { IntegerErrors, integer } from './integer'
 import { intersection } from './intersection'
 import * as N from './nullable'
@@ -24,6 +24,7 @@ import {
   AllOfBaseScheam,
   AnyOfBaseScheam,
   ArrayBaseSchema,
+  BooleanBaseSchema,
   FromJsonSchema,
   IntegerBaseSchema,
   NullBaseSchema,
@@ -136,6 +137,10 @@ export function fromJsonSchema<S extends JsonSchema<any> | ValueOf<JsonSchema<an
 
 export type ErrorsFromJsonSchema<S> = S extends ValueOf<JsonSchema<any>> | JsonSchema<any>
   ? {
+      readonly Boolean: BooleanErrors<
+        Cast<S['const'], boolean>,
+        Cast<S['enum'], readonly boolean[]>
+      >
       readonly String: StringErrors<Cast<S['const'], string>, Cast<S['enum'], readonly string[]>>
       readonly Number: NumberErrors<Cast<S['const'], number>, Cast<S['enum'], readonly number[]>>
       readonly Integer: IntegerErrors<
@@ -161,7 +166,9 @@ export type ErrorsFromJsonSchema<S> = S extends ValueOf<JsonSchema<any>> | JsonS
       readonly OneOf: S extends { readonly oneOf: readonly [...infer R] }
         ? ErrorsFromJsonSchema<R[number]>
         : unknown
-    }[S extends StringBaseSchema
+    }[S extends BooleanBaseSchema
+      ? 'Boolean'
+      : S extends StringBaseSchema
       ? 'String'
       : S extends NumberBaseSchema
       ? 'Number'

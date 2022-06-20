@@ -3,6 +3,7 @@ import { Integer } from 'hkt-ts/number'
 import { Equals } from 'ts-toolbelt/out/Any/Equals'
 
 import { JsonSchema } from './JsonSchema'
+import { BooleanConstraints } from './boolean'
 import { IntegerConstraints } from './integer'
 import { ToIntersection } from './intersection'
 import { NumberConstraints } from './number'
@@ -12,6 +13,7 @@ import { GetSharedType } from '@/Constraints/shared'
 import { GetTypeFromStringConstraints } from '@/Constraints/string'
 import { StructAdditionalProperties } from '@/Constraints/struct'
 
+export type BooleanBaseSchema = { readonly type: 'boolean' }
 export type StringBaseSchema = { readonly type: 'string' }
 export type NumberBaseSchema = { readonly type: 'number' }
 export type IntegerBaseSchema = { readonly type: 'integer' }
@@ -29,6 +31,9 @@ export type FromJsonSchema<S> = S extends JsonSchema<infer R>
   : S extends boolean
   ? S
   : {
+      readonly Boolean: S extends BooleanConstraints<infer Const, infer Enum>
+        ? GetSharedType<Const, Enum, boolean>
+        : boolean
       readonly String: S extends StringConstraints<infer Const, infer Enum, infer Format>
         ? GetTypeFromStringConstraints<
             UnknownToNever<Const>,
@@ -62,7 +67,9 @@ export type FromJsonSchema<S> = S extends JsonSchema<infer R>
       readonly OneOf: S extends { readonly oneOf: readonly [...infer R] }
         ? { readonly [K in keyof R]: FromJsonSchema<R[K]> }[number]
         : unknown
-    }[S extends StringBaseSchema
+    }[S extends BooleanBaseSchema
+      ? 'Boolean'
+      : S extends StringBaseSchema
       ? 'String'
       : S extends NumberBaseSchema
       ? 'Number'
@@ -100,7 +107,7 @@ export type FromJsonSchemaObject<T extends ObjectBaseSchema> = T extends {
     ] extends [infer T]
       ? { readonly [K in keyof T]: T[K] }
       : unknown) &
-      StructAdditionalProperties<Additional>
+      StructAdditionalProperties<FromJsonSchema<Additional>>
   : T extends {
       readonly properties: infer Props
       readonly required: readonly [...infer Required]
@@ -124,4 +131,8 @@ export type FromJsonSchemaObject<T extends ObjectBaseSchema> = T extends {
   ? {
       readonly [K in keyof Props]?: FromJsonSchema<Props[K]>
     }
+  : T extends {
+      readonly additionalProperties: infer Additional
+    }
+  ? StructAdditionalProperties<FromJsonSchema<Additional>>
   : ReadonlyRecord<string, unknown>
