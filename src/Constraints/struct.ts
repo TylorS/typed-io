@@ -21,8 +21,8 @@ export interface StructConstraints<
     T,
     BuildStruct<T, Properties> & StructAdditionalProperties<Additional>
   > {
-  readonly patternProperties?: PatternProperties
-  readonly dependencies?: Dependencies
+  readonly patternProperties?: PatternProperties // Cannot be used to determine shape of output because it requires the ability to run Regex at type-level.
+  readonly dependencies?: Dependencies // TODO: Build type for creating unions
   readonly default?: BuildStruct<T, Properties> & StructAdditionalProperties<Additional>
 }
 

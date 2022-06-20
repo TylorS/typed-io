@@ -114,16 +114,21 @@ export interface StringFormatToBrandedString {
 }
 
 export type GetTypeFromStringConstraints<
-  T extends string = never,
-  T2 extends ReadonlyArray<string> = never,
+  Const extends string = never,
+  Enum extends ReadonlyArray<string> = never,
   Format extends StringFormat = never,
 > = {
   0: {
-    0: Branded.Branded<Branded.BrandOf<StringFormatToBrandedString[Format]>, T>
+    0: BrandIfNotNever<Branded.BrandOf<StringFormatToBrandedString[Format]>, Const>
     1: {
-      0: Branded.Branded<Branded.BrandOf<StringFormatToBrandedString[Format]>, T2[number]>
+      0: BrandIfNotNever<Branded.BrandOf<StringFormatToBrandedString[Format]>, Enum[number]>
       1: StringFormatToBrandedString[Format]
-    }[Equals<never, T2>]
-  }[Equals<never, T>]
-  1: GetSharedType<T, T2, string>
+    }[Equals<never, Enum>]
+  }[Equals<never, Const>]
+  1: GetSharedType<Const, Enum, string>
 }[Equals<never, Format>]
+
+type BrandIfNotNever<Brand, T> = {
+  0: Branded.Branded<Brand, T>
+  1: T
+}[Equals<never, Brand>]

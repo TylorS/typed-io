@@ -7,7 +7,7 @@ import * as These from 'hkt-ts/These'
 import { Eq } from 'hkt-ts/string'
 import { makeAssignAssociative } from 'hkt-ts/struct'
 
-import { Decoder, DecoderHKT } from './Decoder'
+import { Decoder, DecoderHKT, ErrorOf } from './Decoder'
 import { decodeSharedConstraints } from './shared'
 
 import * as SC from '@/Constraints/struct'
@@ -15,6 +15,7 @@ import { Property } from '@/Schema'
 import {
   DependencyError,
   PatternPropertiesError,
+  ToRoseTree,
   UnknownRecordError,
 } from '@/SchemaError/BuiltinErrors'
 import {
@@ -31,6 +32,36 @@ type UnknownDecoder<A = any> = Decoder<unknown, any, A> | Decoder<unknown, never
 type ValuesOf<T> = T[keyof T]
 
 const diffStrings = A.difference(Eq)
+
+export type StructErrors<
+  Props extends ReadonlyRecord<string, Property<UnknownDecoder, boolean>>,
+  Additional extends UnknownDecoder = never,
+  PatternProperties extends ReadonlyRecord<string, UnknownDecoder<string>> = never,
+  Dependencies extends ReadonlyRecord<
+    keyof Props & string,
+    | UnknownDecoder<ValuesOf<SC.BuildStruct<DecoderHKT, Props>>>
+    | NonEmptyArray<keyof Props & string>
+  > = never,
+  Built = [Additional] extends [never]
+    ? SC.BuildStruct<DecoderHKT, Props>
+    : SC.BuildStruct<DecoderHKT, Props> & SC.StructAdditionalProperties<Additional>,
+> =
+  | UnknownRecordError
+  | {
+      [K in keyof Props]: Props[K] extends Property<infer Decoder, boolean>
+        ? ErrorOf<Decoder>
+        : never
+    }[keyof Props]
+  | {
+      [K in keyof PatternProperties]: ErrorOf<PatternProperties[K]> extends ToRoseTree
+        ? PatternPropertiesError<Built, ErrorOf<PatternProperties[K]>>
+        : PatternPropertiesError<Built, never>
+    }[keyof PatternProperties]
+  | {
+      [K in keyof Dependencies]: ErrorOf<Dependencies[K]> extends ToRoseTree
+        ? DependencyError<Built, ErrorOf<Dependencies[K]>>
+        : DependencyError<Built, never>
+    }[keyof Dependencies]
 
 export interface StructConstraints<
   Props extends ReadonlyRecord<string, Property<UnknownDecoder, boolean>>,
@@ -55,7 +86,13 @@ export const struct = <
 >(
   properties: Props,
   constraints?: StructConstraints<Props, Additional, PatternProperties, Dependencies>,
-) => {
+): Decoder<
+  unknown,
+  StructErrors<Props, Additional, PatternProperties, Dependencies> extends infer R ? R : never,
+  [Additional] extends [never]
+    ? SC.BuildStruct<DecoderHKT, Props>
+    : SC.BuildStruct<DecoderHKT, Props> & SC.StructAdditionalProperties<Additional>
+> => {
   const propKeys = Object.keys(properties)
   const { concat } = These.makeAssociative(
     makeSchemaErrorAssociative<any>(''),

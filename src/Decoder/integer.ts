@@ -20,21 +20,22 @@ export interface IntegerConstraints<
   Default extends Integer = never,
 > extends OmitJsonSchemaOnly<NC.IntegerConstraints<DecoderHKT, Const, Enum, Default>> {}
 
+export type IntegerErrors<
+  Const extends Integer = never,
+  Enum extends ReadonlyArray<Integer> = never,
+> = GetSharedError<
+  IntegerError | PositiveInfinityError | NegativeInfinityError | NaNError,
+  Const,
+  Enum
+>
+
 export const integer = <
   Const extends Integer = never,
   Enum extends ReadonlyArray<Integer> = never,
   Default extends Integer = never,
 >(
   constraints?: IntegerConstraints<Const, Enum, Default>,
-): Decoder<
-  unknown,
-  GetSharedError<
-    IntegerError | PositiveInfinityError | NegativeInfinityError | NaNError,
-    Const,
-    Enum
-  >,
-  GetSharedType<Const, Enum, Integer | Default>
-> =>
+): Decoder<unknown, IntegerErrors<Const, Enum>, GetSharedType<Const, Enum, Integer | Default>> =>
   decodeSharedConstraints(
     pipe(isNumber, compose(isInteger)),
     IntegerError.leaf,

@@ -79,7 +79,7 @@ export abstract class BaseInterpreter<C extends AnyCapabilities, Output> {
   )
   readonly add = this.interpreter.add
 
-  constructor(readonly entityName: string) { }
+  constructor(readonly entityName: string) {}
 }
 
 export const interpreter = <C extends AnyCapabilities, Output>(entityName: string) =>
@@ -112,7 +112,9 @@ export const memoizeOnce = <A>(f: () => A) => {
   }
 }
 
-export type DropNever<T> = { readonly [K in keyof T as {
-  0: K
-  1: never
-}[ Equals<never, T[K]> ]]: T[K] }
+export type DropNever<T> = {
+  readonly [K in keyof T as {
+    0: K
+    1: never
+  }[Equals<never, T[K]>]]: T[K]
+}
