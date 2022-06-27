@@ -4,6 +4,7 @@
   "description": "Schemas for modeling all of your data structures",
   "main": "index.js",
   "scripts": {
+    "gen:decoder": "node -r ./require-hooks tools/generateDecoderCli.ts",
     "build:cjs": "rm -rf cjs && tsc -p ./tsconfig.build.cjs.json  && tsconfig-replace-paths -p ./tsconfig.build.cjs.json",
     "build:esm": "rm -rf esm && ttsc -p ./tsconfig.build.esm.json && tsconfig-replace-paths -p ./tsconfig.build.esm.json",
     "build:package-exports": "node -r ./require-hooks ./tools/generatePackageExports.ts",
@@ -29,6 +30,8 @@
   "author": "Tylor Steinberger (tlsteinberger167@gmail.com)",
   "license": "MIT",
   "dependencies": {
+    "@json-schema-tools/dereferencer": "^1.5.4",
+    "@json-schema-tools/meta-schema": "^1.6.19",
     "@types/json-schema": "^7.0.11",
     "hkt-ts": "^2.0.9",
     "json-schema-parser": "^0.1.0",
@@ -37,6 +40,9 @@
   "peerDependencies": {
     "fast-check": "^3.0.0",
     "tslib": "^2.4.0"
+  },
+  "optionalDependencies": {
+    "json-schema-deref-sync": "^0.14.0"
   },
   "devDependencies": {
     "@types/mocha": "^9.1.1",
@@ -59,6 +65,7 @@
     "fast-check": "^3.0.0",
     "fast-glob": "^3.2.11",
     "husky": "^8.0.1",
+    "json-schema-deref-sync": "^0.14.0",
     "lint-staged": "^12.5.0",
     "mocha": "^10.0.0",
     "prettier": "^2.7.0",

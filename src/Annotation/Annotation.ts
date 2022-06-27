@@ -23,7 +23,7 @@ export type IdOf<T> = [T] extends [AnnotationId<infer _, infer R>]
   ? R
   : T
 
-export const makeAnnotation =
+export const id =
   <A>() =>
   <Id extends string | symbol>(id: Id): AnnotationId<Id, A> =>
     Branded<AnnotationId<Id, A>>()(typeof id === 'symbol' ? id : Symbol(id))

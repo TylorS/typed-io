@@ -8,6 +8,7 @@ import { Eq } from 'hkt-ts/string'
 import { makeAssignAssociative } from 'hkt-ts/struct'
 
 import { Decoder, DecoderHKT, ErrorOf } from './Decoder'
+import { isUnknownRecord } from './isUnknownRecord'
 import { decodeSharedConstraints } from './shared'
 
 import * as SC from '@/Constraints/struct'
@@ -26,7 +27,6 @@ import {
   UnexpectedKeys,
   makeSchemaErrorAssociative,
 } from '@/SchemaError/SchemaError'
-import { isUnknownRecord } from '@/refinements/record'
 
 type UnknownDecoder<A = any> = Decoder<unknown, any, A> | Decoder<unknown, never, A>
 type ValuesOf<T> = T[keyof T]

@@ -9,7 +9,7 @@ export interface StringConstraints<
   Const extends string = never,
   Enum extends ReadonlyArray<string> = never,
   Format extends StringFormat = never,
-> extends SharedConstraints<T, Const, Enum, string> {
+> extends SharedConstraints<T, Const, Enum, never> {
   readonly minLength?: NonNegativeInteger
   readonly maxLength?: NonNegativeInteger
   readonly format?: Format

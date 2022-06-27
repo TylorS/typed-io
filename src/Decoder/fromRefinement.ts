@@ -5,7 +5,7 @@ import { Decoder } from './Decoder'
 
 import { LeafError } from '@/SchemaError/SchemaError'
 
-export function fromRefinment<A, B extends A, E>(
+export function fromRefinement<A, B extends A, E>(
   refinement: Refinement<A, B>,
   onError: (a: A) => E,
 ): Decoder<A, E, B> {

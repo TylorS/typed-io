@@ -3,13 +3,13 @@ import * as NonEmptyArray from 'hkt-ts/NonEmptyArray'
 import * as These from 'hkt-ts/These'
 import * as S from 'hkt-ts/struct'
 
-import { AnyDecoder, Decoder, ErrorOf, IntputOf, OutputOf } from './Decoder'
+import { AnyDecoder, Decoder, ErrorOf, InputOf, OutputOf } from './Decoder'
 
 import { ToIntersection } from '@/JsonSchema2/intersection'
 import { makeSchemaErrorAssociative } from '@/SchemaError/SchemaError'
 
 export type IntersectionInput<Decoders extends ReadonlyArray<AnyDecoder>> = ToIntersection<{
-  readonly [K in keyof Decoders]: IntputOf<Decoders[K]>
+  readonly [K in keyof Decoders]: InputOf<Decoders[K]>
 }>
 
 export type IntersectionError<Decoders extends ReadonlyArray<AnyDecoder>> = {

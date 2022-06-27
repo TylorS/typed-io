@@ -1,10 +1,12 @@
+import { HKT } from 'hkt-ts/HKT'
 import * as N from 'hkt-ts/number'
 
-import { GetSharedType, NumberConstraints } from '@/JsonSchema/JsonSchema'
+import { NumberConstraints } from '@/Constraints/number'
+import { GetSharedType, OmitJsonSchemaOnly } from '@/Constraints/shared'
 
 export const isNumber =
   <Const extends number = never, Enum extends ReadonlyArray<number> = never>(
-    constraints?: NumberConstraints<Const, Enum>,
+    constraints?: OmitJsonSchemaOnly<NumberConstraints<HKT, Const, Enum>>,
   ) =>
   (x: unknown): x is GetSharedType<Const, Enum, number> => {
     if (!N.isNumber(x)) {

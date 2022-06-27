@@ -247,6 +247,7 @@ describe(__filename, () => {
         },
       ],
     } as const
+
     const baseDecoder = fromJsonSchema(baseSchema)
 
     it('decodes the union', () =>

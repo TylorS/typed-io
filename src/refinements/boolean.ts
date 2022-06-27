@@ -1,10 +1,11 @@
+import { HKT } from 'hkt-ts/HKT'
 import * as B from 'hkt-ts/boolean'
 
-import { GetSharedType, SharedConstraints } from '@/JsonSchema/JsonSchema'
+import { GetSharedType, SharedConstraints } from '@/Constraints/shared'
 
 export const isBoolean =
   <Const extends boolean = never, Enum extends ReadonlyArray<boolean> = never>(
-    constraints?: SharedConstraints<Const, Enum>,
+    constraints?: SharedConstraints<HKT, Const, Enum>,
   ) =>
   (x: unknown): x is GetSharedType<Const, Enum, boolean> => {
     if (!B.isBoolean(x)) {

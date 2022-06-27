@@ -2,12 +2,12 @@ import { ReadonlyRecord } from 'hkt-ts/Record'
 import { Left } from 'hkt-ts/These'
 import { IntersectOf } from 'ts-toolbelt/out/Union/IntersectOf'
 
-import { Decoder, ErrorOf, IntputOf } from './Decoder'
+import { Decoder, ErrorOf, InputOf } from './Decoder'
 import { isUnknownRecord } from './isUnknownRecord'
 
 import { ToRoseTree, UnknownRecordError } from '@/SchemaError/BuiltinErrors'
 
-export type SumInput<Decoders> = IntersectOf<IntputOf<Decoders[keyof Decoders]>>
+export type SumInput<Decoders> = IntersectOf<InputOf<Decoders[keyof Decoders]>>
 export type SumError<Decoders> = ErrorOf<Decoders[keyof Decoders]>
 
 type UnknownDecoder<A> = Decoder<unknown, ToRoseTree, A> | Decoder<unknown, never, A>

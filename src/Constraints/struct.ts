@@ -11,7 +11,7 @@ export interface StructConstraints<
   T extends HKT,
   Properties extends ReadonlyRecord<string, Property<Kind_<[T], DefaultsOf<T>>, boolean>>,
   Additional extends Kind_<[T], DefaultsOf<T>> = never,
-  PatternProperties extends ReadonlyRecord<string, ConstrainA<T, string>> = never,
+  PatternProperties extends ReadonlyRecord<string, Kind_<[T], DefaultsOf<T>>> = never,
   Dependencies extends ReadonlyRecord<
     keyof Properties & string,
     | ConstrainA<T, BuildStruct<T, Properties>[keyof BuildStruct<T, Properties>]>

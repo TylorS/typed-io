@@ -118,3 +118,14 @@ export type DropNever<T> = {
     1: never
   }[Equals<never, T[K]>]]: T[K]
 }
+
+export type Compact<C> = [DropNever<C>] extends [infer R]
+  ? { readonly [K in keyof R]: R[K] }
+  : never
+
+export type ToIntersection<L extends ReadonlyArray<any>, R = unknown> = L extends readonly [
+  infer Head,
+  ...infer Tail,
+]
+  ? ToIntersection<Tail, R & Head>
+  : R

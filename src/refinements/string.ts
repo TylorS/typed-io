@@ -1,6 +1,8 @@
 import parseISO from 'date-fns/parseISO'
+import { HKT } from 'hkt-ts/HKT'
 import * as S from 'hkt-ts/string'
 
+import { OmitJsonSchemaOnly } from '@/Constraints/shared'
 import {
   DateString,
   DateTime,
@@ -21,7 +23,7 @@ import {
   Uri,
   UriReference,
   Uuid,
-} from '@/JsonSchema/JsonSchema'
+} from '@/Constraints/string'
 
 export const EMAIL_REGEX =
   /^(([^<>()[\].,;:\s@"]+(\.[^<>()[\].,;:\s@"]+)*)|(".+"))@(([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{2,})$/i
@@ -64,7 +66,7 @@ export const isString =
     Enum extends ReadonlyArray<string> = never,
     Format extends StringFormat = never,
   >(
-    constraints?: StringConstraints<Const, Enum, Format>,
+    constraints?: OmitJsonSchemaOnly<StringConstraints<HKT, Const, Enum, Format>>,
   ) =>
   (x: unknown): x is GetTypeFromStringConstraints<Const, Enum, Format> => {
     if (!S.isString(x)) {

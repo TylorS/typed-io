@@ -1,4 +1,7 @@
+import { HKT3, Params, Variance } from 'hkt-ts'
+
 import { AnyAnnotation } from './Annotation/Annotation'
+import type { Compact } from './internal'
 
 /**
  * Schema is an abstract type which keeps track of any number of capabilities, like deriving Decoders/Constructors,
@@ -7,9 +10,9 @@ import { AnyAnnotation } from './Annotation/Annotation'
  * well as be annotated to contain additional information that can be used to generate rich sets of information from.
  */
 export abstract class Schema<
-  Capabilities extends AnyCapabilities,
-  Api,
-  Annotations extends AnyAnnotations,
+  out Capabilities extends AnyCapabilities,
+  out Api,
+  out Annotations extends AnyAnnotations,
 > {
   static type: string
   abstract readonly type: string
@@ -20,10 +23,29 @@ export abstract class Schema<
     readonly _Api: () => Api
     readonly _Annotations: () => Annotations
   }
+
+  readonly is = <
+    S extends (new (...args: any) => Schema<any, any, any>) & { readonly type: string },
+  >(
+    s: S,
+  ): this is InstanceType<S> => this.constructor === s
 }
 
-export type CapabilitiesOf<T extends AnySchema> = ReturnType<
-  T['__NOT_AVAILABLE_AT_RUNTIME__']['_Capabilities']
+export interface SchemaHKT extends HKT3 {
+  readonly type: Schema<
+    Extract<this[Params.R], AnyCapabilities>,
+    this[Params.E],
+    Extract<this[Params.A], AnyAnnotations>
+  >
+  readonly defaults: {
+    [Params.R]: Variance.Covariant<AnyCapabilities>
+    [Params.E]: Variance.Covariant<any>
+    [Params.A]: Variance.Covariant<AnyAnnotations>
+  }
+}
+
+export type CapabilitiesOf<T extends AnySchema> = Compact<
+  ReturnType<T['__NOT_AVAILABLE_AT_RUNTIME__']['_Capabilities']>
 >
 
 export type ApiOf<T extends AnySchema> = ReturnType<T['__NOT_AVAILABLE_AT_RUNTIME__']['_Api']>
@@ -35,7 +57,7 @@ export type AnnotationsOf<T extends AnySchema> = ReturnType<
 /**
  * Helper for constructing functions/classes which depend on any Schema type.
  */
-export type AnySchema = Schema<any, any, any>
+export type AnySchema = Schema<any, any, any> | Schema<any, never, any>
 
 /**
  * Helper for constructing functions/classes which depend on any Schema type with a minimum set of capabilities.
@@ -68,13 +90,9 @@ export type AnyAnnotations = ReadonlyArray<AnyAnnotation>
 /**
  * Type-level helper for updating the Capabilities of a Schema
  */
-export type UpdateCapabilities<C extends AnyCapabilities, D extends AnyCapabilities> = [
-  {
-    readonly [K in keyof C | keyof D]: K extends keyof D ? D[K] : C[K]
-  },
-] extends [infer R]
-  ? { readonly [K in keyof R]: R[K] }
-  : never
+export type UpdateCapabilities<C extends AnyCapabilities, D extends AnyCapabilities> = Compact<{
+  readonly [K in keyof C | keyof D]: K extends keyof D ? D[K] : C[K]
+}>
 
 export const ContinuationSymbol = Symbol('@typed/io/Continuation')
 export type ContinuationSymbol = typeof ContinuationSymbol
@@ -118,4 +136,9 @@ export class Property<A, IsOptional extends boolean> {
    * Make a Property Required
    */
   readonly required = () => new Property(this.value, false)
+
+  /**
+   * Change the output value of a Property
+   */
+  readonly map = <B>(f: (a: A) => B) => new Property(f(this.value), this.isOptional)
 }

@@ -16,7 +16,7 @@ export function Decoder<I, E, O>(decode: Decoder<I, E, O>['decode']): Decoder<I,
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-export type IntputOf<T> = [T] extends [Decoder<infer R, infer _, infer __>] ? R : never
+export type InputOf<T> = [T] extends [Decoder<infer R, infer _, infer __>] ? R : never
 export type ErrorOf<T> = [T] extends [Decoder<infer _, infer R, infer __>] ? R : never
 export type OutputOf<T> = [T] extends [Decoder<infer _, infer __, infer R>] ? R : never
 /* eslint-enable @typescript-eslint/no-unused-vars */

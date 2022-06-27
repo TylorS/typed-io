@@ -4,7 +4,7 @@ import { RoseTree } from 'hkt-ts/RoseTree'
 
 import { Decoder } from './Decoder'
 import { compose } from './compose'
-import { fromRefinment } from './fromRefinement'
+import { fromRefinement } from './fromRefinement'
 
 import { ToRoseTree } from '@/SchemaError/BuiltinErrors'
 
@@ -16,7 +16,7 @@ export const refine =
   <I, E>(decoder: Decoder<I, E, A>): Decoder<I, E | RefineError<A, B>, B> =>
     pipe(
       decoder,
-      compose(fromRefinment(refinement, (a) => new RefineError(a, refinement, refinementName))),
+      compose(fromRefinement(refinement, (a) => new RefineError(a, refinement, refinementName))),
     )
 
 export class RefineError<A, B extends A> implements ToRoseTree {

@@ -6,6 +6,7 @@ import * as These from 'hkt-ts/These'
 import { makeAssignIdentity } from 'hkt-ts/struct'
 
 import * as D from './Decoder'
+import { isUnknownRecord } from './isUnknownRecord'
 import { decodeSharedConstraints } from './shared'
 
 import * as RC from '@/Constraints/record'
@@ -26,7 +27,6 @@ import {
   SchemaError,
   makeSchemaErrorAssociative,
 } from '@/SchemaError/SchemaError'
-import { isUnknownRecord } from '@/refinements/record'
 
 export interface RecordConstraints<E, K extends string, A>
   extends OmitJsonSchemaOnly<

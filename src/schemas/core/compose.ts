@@ -1,5 +1,5 @@
 import { AnyAnnotations, AnyCapabilities, Schema } from '@/Schema'
-import { DropNever } from '@/internal'
+import { Compact } from '@/internal'
 
 export class ComposeSchema<
   C1 extends AnyCapabilities,
@@ -9,15 +9,18 @@ export class ComposeSchema<
   Api2,
   Annotations2 extends AnyAnnotations,
 > extends Schema<
-  DropNever<ComposeCapabilities<C1, C2>>,
-  Api2,
+  Compact<ComposeCapabilities<C1, C2>>,
+  { readonly left: Api1; readonly right: Api2 },
   readonly [...Annotations, ...Annotations2]
 > {
   static type = '@typed/io/Compose' as const
   readonly type = ComposeSchema.type
 
   get api() {
-    return this.right.api
+    return {
+      left: this.left.api,
+      right: this.right.api,
+    }
   }
 
   constructor(
@@ -45,8 +48,8 @@ export const compose =
   <C1 extends AnyCapabilities, Api1, Annotations extends AnyAnnotations>(
     left: Schema<C1, Api1, Annotations>,
   ): Schema<
-    DropNever<ComposeCapabilities<C1, C2>>,
-    Api2,
+    Compact<ComposeCapabilities<C1, C2>>,
+    { readonly left: Api1; readonly right: Api2 },
     readonly [...Annotations, ...Annotations2]
   > =>
     new ComposeSchema(left, right)

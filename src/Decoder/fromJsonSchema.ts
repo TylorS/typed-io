@@ -20,19 +20,7 @@ import { unknkownArray } from './unknownArray'
 import { unknownRecord } from './unknownRecord'
 
 import { JsonSchema } from '@/JsonSchema/JsonSchema'
-import {
-  AllOfBaseScheam,
-  AnyOfBaseScheam,
-  ArrayBaseSchema,
-  BooleanBaseSchema,
-  FromJsonSchema,
-  IntegerBaseSchema,
-  NullBaseSchema,
-  NumberBaseSchema,
-  ObjectBaseSchema,
-  OneOfBaseScheam,
-  StringBaseSchema,
-} from '@/JsonSchema/type-level'
+import { FromJsonSchema, GetKeys, ObjectBaseSchema } from '@/JsonSchema/type-level'
 import { Property } from '@/Schema'
 import {
   DependencyError,
@@ -42,11 +30,7 @@ import {
 } from '@/SchemaError/BuiltinErrors'
 
 export type FromJsonSchemaDecoder<S extends JsonSchema<any> | ValueOf<JsonSchema<any>> | boolean> =
-  [Decoder<unknown, ErrorsFromJsonSchema<S>, FromJsonSchema<S>>] extends [
-    Decoder<infer I, infer E, infer O>,
-  ]
-    ? Decoder<I, E, O>
-    : never
+  Decoder<unknown, ErrorsFromJsonSchema<S>, FromJsonSchema<S>>
 
 /**
  * Assumes that the JsonSchema provided here will already be de-referenced.
@@ -103,7 +87,10 @@ export function fromJsonSchema<S extends JsonSchema<any> | ValueOf<JsonSchema<an
       }
 
       if (schema.additionalProperties !== undefined) {
-        return record(fromJsonSchema(schema.additionalProperties), schema as any) as unknown as R
+        return record(
+          fromJsonSchema(schema.additionalProperties) as any,
+          schema as any,
+        ) as unknown as R
       }
 
       return unknownRecord as unknown as R
@@ -135,58 +122,41 @@ export function fromJsonSchema<S extends JsonSchema<any> | ValueOf<JsonSchema<an
   }
 }
 
+export type ErrorsFromJsonSchemaMap<S extends ValueOf<JsonSchema<any>>> = {
+  readonly Boolean: BooleanErrors<Cast<S['const'], boolean>, Cast<S['enum'], readonly boolean[]>>
+  readonly String: StringErrors<Cast<S['const'], string>, Cast<S['enum'], readonly string[]>>
+  readonly Number: NumberErrors<Cast<S['const'], number>, Cast<S['enum'], readonly number[]>>
+  readonly Integer: IntegerErrors<Cast<S['const'], Integer>, Cast<S['enum'], readonly Integer[]>>
+  readonly Null: never
+  readonly Array: S extends { readonly contains: infer R }
+    ? ArrayErrors<ErrorsFromJsonSchema<R>, FromJsonSchema<R>>
+    : S extends { readonly items: readonly [...infer R] }
+    ? TupleErrors<
+        ErrorsFromJsonSchema<R[number]>,
+        { readonly [K in keyof R]: FromJsonSchema<R[K]> }
+      >
+    : never
+  readonly Object: S extends ObjectBaseSchema ? ErrorsFromJsonSchemaObject<S> : never
+  readonly AllOf: S extends { readonly allOf: readonly [...infer R] }
+    ? ErrorsFromJsonSchema<R[number]>
+    : never
+  readonly AnyOf: S extends { readonly anyOf: readonly [...infer R] }
+    ? ErrorsFromJsonSchema<R[number]>
+    : unknown
+  readonly OneOf: S extends { readonly oneOf: readonly [...infer R] }
+    ? ErrorsFromJsonSchema<R[number]>
+    : unknown
+}
+
+export type FoldErrors<S, Keys extends ReadonlyArray<any>, R = unknown> = Keys extends readonly [
+  infer Head extends keyof ErrorsFromJsonSchemaMap<S>,
+  ...infer Tail,
+]
+  ? FoldErrors<S, Tail, R | ErrorsFromJsonSchemaMap<S>[Head]>
+  : R
+
 export type ErrorsFromJsonSchema<S> = S extends ValueOf<JsonSchema<any>> | JsonSchema<any>
-  ? {
-      readonly Boolean: BooleanErrors<
-        Cast<S['const'], boolean>,
-        Cast<S['enum'], readonly boolean[]>
-      >
-      readonly String: StringErrors<Cast<S['const'], string>, Cast<S['enum'], readonly string[]>>
-      readonly Number: NumberErrors<Cast<S['const'], number>, Cast<S['enum'], readonly number[]>>
-      readonly Integer: IntegerErrors<
-        Cast<S['const'], Integer>,
-        Cast<S['enum'], readonly Integer[]>
-      >
-      readonly Null: never
-      readonly Array: S extends { readonly contains: infer R }
-        ? ArrayErrors<ErrorsFromJsonSchema<R>, FromJsonSchema<R>>
-        : S extends { readonly items: readonly [...infer R] }
-        ? TupleErrors<
-            ErrorsFromJsonSchema<R[number]>,
-            { readonly [K in keyof R]: FromJsonSchema<R[K]> }
-          >
-        : never
-      readonly Object: S extends ObjectBaseSchema ? ErrorsFromJsonSchemaObject<S> : never
-      readonly AllOf: S extends { readonly allOf: readonly [...infer R] }
-        ? ErrorsFromJsonSchema<R[number]>
-        : never
-      readonly AnyOf: S extends { readonly anyOf: readonly [...infer R] }
-        ? ErrorsFromJsonSchema<R[number]>
-        : unknown
-      readonly OneOf: S extends { readonly oneOf: readonly [...infer R] }
-        ? ErrorsFromJsonSchema<R[number]>
-        : unknown
-    }[S extends BooleanBaseSchema
-      ? 'Boolean'
-      : S extends StringBaseSchema
-      ? 'String'
-      : S extends NumberBaseSchema
-      ? 'Number'
-      : S extends IntegerBaseSchema
-      ? 'Integer'
-      : S extends NullBaseSchema
-      ? 'Null'
-      : S extends ArrayBaseSchema
-      ? 'Array'
-      : S extends ObjectBaseSchema
-      ? 'Object'
-      : S extends AllOfBaseScheam
-      ? 'AllOf'
-      : S extends AnyOfBaseScheam
-      ? 'AnyOf'
-      : S extends OneOfBaseScheam
-      ? 'OneOf'
-      : never]
+  ? FoldErrors<S, GetKeys<S>>
   : never
 
 export type ErrorsFromJsonSchemaObject<T extends ObjectBaseSchema> = T extends {
